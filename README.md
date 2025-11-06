@@ -1,12 +1,11 @@
-# Hello, World
+# Basic API Gateway with Lambda Function Written in Python
 
-The main and test branches are intentionally left blank except for this file.
+> For use with template-pipeline.yml which can be deployed using [Atlantis Configuration Repository for Serverless Deployments using AWS SAM](https://github.com/63Klabs/atlantis-cfn-configuration-repo-for-serverless-deployments)
 
-Check out the dev branch to get started.
+A very simple example to demonstrate Atlantis Template for AWS CodePipeline to provision a web service that utilizes API Gateway and a simple Lambda function written in Python.
 
-The dev branch of this repository was seeded from the following S3 location:
-s3://63klabs/atlantis/app-starters/v2/01-basic-apigw-lambda-py.zip
+> Note: To keep this example VERY basic and simple, concepts such as routing, caching, and advanced monitoring are not used. For near production-ready examples, review the the other Atlantis starter applications.
 
-Clone URL (HTTPS): https://github.com/chadkluck/serverless-video-converter.git
+## Tutorial
 
-Clone URL (SSH): git@github.com:chadkluck/serverless-video-converter.git
+Read the [Atlantis Tutorials introductory page](https://github.com/63Klabs/atlantis-tutorials), then perform the steps outlined in the [Basic API Gateway with Lambda Python tutorial](https://github.com/63Klabs/atlantis-tutorials/tree/main/tutorials/01-basic-api-gateway-with-lambda-written-in-python).
