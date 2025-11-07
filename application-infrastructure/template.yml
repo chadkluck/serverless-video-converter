@@ -438,6 +438,8 @@ Resources:
 
   VideoSourceBucket:
     Type: AWS::S3::Bucket
+    DependsOn: 
+    - S3LambdaPermission  # Critical - wait for permission too
     Properties:
       BucketName: !Join
         - "-"
@@ -528,10 +530,14 @@ Resources:
     Type: "AWS::Lambda::Permission"
     Properties:
       Action: lambda:InvokeFunction
-      FunctionName:  !Sub '${Prefix}-${ProjectId}-${StageId}-SubmitJobFunction' # Avoid circular reference !Sub "/aws/lambda/${SubmitJobFunction}"
+      FunctionName: !Ref SubmitJobFunction 
       Principal: s3.amazonaws.com
-      SourceArn: !GetAtt VideoSourceBucket.Arn
+      SourceArn: !Join # Avoid circular reference
+        - "-"
+        - - !If [UseS3BucketNameOrgPrefix, !Sub "arn:aws:s3:::${S3BucketNameOrgPrefix}-${Prefix}", !Sub "arn:aws:s3:::${Prefix}" ]
+          - !Sub "${ProjectId}-${StageId}-${AWS::Region}-${AWS::AccountId}-src"
       SourceAccount: !Ref AWS::AccountId
+
 
 # =============================================================================
 # OUTPUTS
