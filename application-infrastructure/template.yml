@@ -438,6 +438,7 @@ Resources:
 
   VideoSourceBucket:
     Type: AWS::S3::Bucket
+    DependsOn: AppFunction
     Properties:
       BucketName: !Join
         - "-"
@@ -481,7 +482,7 @@ Resources:
       NotificationConfiguration:
         LambdaConfigurations:
           - Event: s3:ObjectCreated:Put
-            Function: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${Prefix}-${ProjectId}-${StageId}-AppFunction' # Avoid circular reference
+            Function: !Ref AppFunction'
             Filter:
               S3Key:
                 Rules:
