@@ -27,15 +27,10 @@ This application stack is used in conjunction with S3 fronted by CloudFront and 
 
 ```mermaid
 flowchart TD
-    A[User uploads video file] -.->|"1. Upload"| B[VideoSourceBucket]
-    B --> C[S3 triggers Lambda]
-    C --> D[SubmitJobFunction]
-    D --> E[AWS Elemental MediaConvert]
-    E --> F[VideoOutputBucket]
-    
-    B -.->|"2. Trigger"| D
-    D -.->|"3. Submit job"| E
-    E -.->|"4. Save transcoded videos"| F
+    A[User uploads video file] -.->|"1. Upload"| B[S3: VideoSourceBucket]
+    B -->|"2. Trigger"| C[Lambda: SubmitJobFunction]
+    C -->|"3. Submit job"| D[AWS Elemental MediaConvert]
+    D -->|"4. Save transcoded videos"| E[VideoOutputBucket]
 ```
 
 To maintain a micro-service, this stack ONLY manages proccessing of the video. It is part of a process chain.
