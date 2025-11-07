@@ -111,7 +111,7 @@ Parameters:
 
   RolePath:
     Type: String
-    Description: "Path to use for IAM Roles and Policies. You may wish to separate out your applications from users, or create seperate paths per prefix or application. Specific paths may required by permission boundaries. Ex: /ws-hello-world-test/ or /app_role/"
+    Description: "Path to use for IAM Roles and Policies. You may wish to separate out your applications from users, or create separate paths per prefix or application. Specific paths may required by permission boundaries. Ex: /ws-hello-world-test/ or /app_role/"
     Default: "/"
     AllowedPattern: "^\\/([a-zA-Z0-9-_]+[\\/])+$|^\\/$"
     ConstraintDescription: "May only contain alphanumeric characters, forward slashes, underscores, and dashes. Must begin and end with a slash."
@@ -323,7 +323,7 @@ Resources:
           PARAM_STORE_PATH: !Ref ParameterStoreHierarchy # Path to instance specific params /Finance/ops/PROD/acme-myapp-prod/
           LAMBDA_TIMEOUT_IN_SEC: !Ref FunctionTimeOutInSeconds # so we can calculate any external connection timeout in our code
 
-          MEDIA_CONVERT_ROLE: !Sub "arn:aws:iam::${AWS::AccountId}:role/${Prefix}-${ProjectId}-${StageId}-MediaConvertRole" # Prevent Circular Reference
+          MEDIA_CONVERT_ROLE: !Sub "arn:aws:iam::${AWS::AccountId}:role${RolePath}${Prefix}-${ProjectId}-${StageId}-MediaConvertRole" # Prevent Circular Reference
           VIDEO_OUTPUT_BUCKET: !Ref VideoOutputBucket # S3 Bucket to store converted videos
           VIDEO_OUTPUT_PREFIX: !Ref VideoOutputPrefix # S3 Prefix (folder) within the output bucket where converted videos will be stored
 
@@ -361,7 +361,7 @@ Resources:
             Action:
             - iam:PassRole
             Effect: Allow
-            Resource: !Sub "arn:aws:iam::${AWS::AccountId}:role/${Prefix}-${ProjectId}-${StageId}-MediaConvertRole" # Prevent Circular Reference
+            Resource: !Sub "arn:aws:iam::${AWS::AccountId}:role${RolePath}${Prefix}-${ProjectId}-${StageId}-MediaConvertRole" # Prevent Circular Reference
           
           - Sid: MediaConvertService
             Action:
@@ -420,7 +420,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Sub "${Prefix}-${ProjectId}-${StageId}-MediaConvertRole"
-      Description: "IAM Role that Lambda passes to Media Converter"
+      Description: "IAM Role that Lambda passes to MediaConvert"
       Path: !Ref RolePath
       PermissionsBoundary: !If [HasPermissionsBoundaryArn, !Ref PermissionsBoundaryArn, !Ref 'AWS::NoValue' ]
       AssumeRolePolicyDocument:
@@ -433,7 +433,7 @@ Resources:
       # These are the resources your Lambda function needs access to Logs, SSM Parameters, DynamoDb, S3, etc.
       # Define specific actions such as get/put (read/write). Work towards practicing the Principle of Least Privilege
       Policies:
-      - PolicyName: !Sub "${Prefix}-${ProjectId}-${StageId}-ExecutionPolicy"
+      - PolicyName: !Sub "${Prefix}-${ProjectId}-${StageId}-MediaConvertExecutionPolicy"
         PolicyDocument:
           Statement:
 
