@@ -11,14 +11,14 @@ invoked on each video object listed in the manifest that you specify
 for the S3 Batch Operations job in Step 5.  
 
 Input parameter "event": The S3 Batch Operations event as a request
-                         for the Lambda function.
+for the Lambda function.
 
 Input parameter "context": Context about the event.
 
 Output: A result structure that Amazon S3 uses to interpret the result 
         of the operation. It is a job response returned back to S3 Batch Operations.
 """
-def lambda_handler(event, context):
+def handler(event, context):
     
     print(event)
 
