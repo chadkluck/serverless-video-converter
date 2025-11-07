@@ -1,4 +1,4 @@
-# Serverless Video Convesion using AWS Elemental MediaConvert
+# Serverless Video Conversion using AWS Elemental MediaConvert
 
 AWS Lambda (Python) function triggered when a new video is uploaded to S3. The Lambda function then submits a job to AWS Elemental MediaConvert
 
@@ -25,9 +25,21 @@ This application stack is used in conjunction with S3 fronted by CloudFront and 
    multiple formats and resolutions
 4. Transcoded videos are saved to another S3 bucket (`VideoOutputBucket`)
 
+flowchart LR
+    A[User uploads video file] --> B[VideoSourceBucket]
+    B --> C[S3 triggers Lambda]
+    C --> D[SubmitJobFunction]
+    D --> E[AWS Elemental MediaConvert]
+    E --> F[VideoOutputBucket]
+    
+    A -.->|"1. Upload"| B
+    B -.->|"2. Trigger"| D
+    D -.->|"3. Submit job"| E
+    E -.->|"4. Save transcoded videos"| F
+
 To maintain a micro-service, this stack ONLY manages proccessing of the video. It is part of a process chain.
 
-You will still need a mechinism to upload to the `VideoSourceBucket` (CLI or web based site) and an `VideoOutputBucket` that can be fronted by CloudFront. (Additional templates are provided by 63Klabs to maintain the S3 fronted by CloudFront stacks)
+You will still need a mechanism to upload to the `VideoSourceBucket` (CLI or web based site) and an `VideoOutputBucket` that can be fronted by CloudFront. (Additional templates are provided by 63Klabs to maintain the S3 fronted by CloudFront stacks)
 
 ## Usage
 
@@ -45,7 +57,7 @@ The video object can be placed in the VideoSourceBucket from the cli:
 aws s3 cp large-video-file.mp4 s3://<VideoSourceBucket>/
 ```
 
-Or using a separate process such as an online video upload mechinsim or other automated process.
+Or using a separate process such as an online video upload mechanism or other automated process.
 
 ### Output
 
@@ -57,7 +69,7 @@ The output bucket must be configured to allow AWS Elemental MediaConvert to writ
 
 This stack is designed to be deployed using the [63Klabs Atlantis framework](https://github.com/63Klabs/atlantis-cfn-configuration-repo-for-serverless-deployments). 
 
-Like any other project, you can skip the framework and go at it on your own by modifying the code and templates to fit your needs. However, if you are managing many projects manually (expecially on your own or part of a small team), the Atlantis framework is highly recommended as it implements Platform Engineering and AWS best practices. Plus it utilizes AWS native resources including SAM deployments and CloudFormation without the need of proprietary DevOps tools. Everything is API, CloudFormation template, and SAM CLI based. There are a lot of logging, metrics, and security features already baked into the templates so you don't need to start from scratch.
+Like any other project, you can skip the framework and go at it on your own by modifying the code and templates to fit your needs. However, if you are managing many projects manually (especially on your own or part of a small team), the Atlantis framework is highly recommended as it implements Platform Engineering and AWS best practices. Plus it utilizes AWS native resources including SAM deployments and CloudFormation without the need of proprietary DevOps tools. Everything is API, CloudFormation template, and SAM CLI based. There are a lot of logging, metrics, and security features already baked into the templates so you don't need to start from scratch.
 
 ### Deployment Using 63Klabs Atlantis
 
@@ -139,7 +151,7 @@ This application can be extended in many ways by making it part of a chain of mi
 - Integrate with AWS Rekognition to analyze video content for moderation or metadata tagging.
 - Integrate with AWS Transcribe to generate captions automatically.
 
-When extending, it is important to maintain separation of concerns. Think of separate micro-services in a chain, each performing ONE duty. Use event driven architecture and step functions to orchestrate processing. Implement automation and checks such as not submitting a video with no audio, or only orchestral music, to Transcribe. Ensure there are places where a human can verify and intervene (step functions are great for this) to prevent unnessary processing.
+When extending, it is important to maintain separation of concerns. Think of separate micro-services in a chain, each performing ONE duty. Use event driven architecture and step functions to orchestrate processing. Implement automation and checks such as not submitting a video with no audio, or only orchestral music, to Transcribe. Ensure there are places where a human can verify, intervene, or approve (step functions are great for this) to prevent unnecessary processing.
 
 ## Author
 
