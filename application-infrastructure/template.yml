@@ -274,7 +274,7 @@ Globals:
 
   # StateMachine:
   #   PropagateTags: True
-  
+
 # =============================================================================
 # RESOURCES
 # -----------------------------------------------------------------------------
@@ -514,7 +514,7 @@ Resources:
             ExpirationInDays: 365
       NotificationConfiguration:
         LambdaConfigurations:
-          - Event: s3:ObjectCreated:Put
+          - Event: s3:ObjectCreated:*
             Function: !GetAtt SubmitJobFunction.Arn
             Filter:
               S3Key:

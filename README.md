@@ -1,5 +1,7 @@
 # Serverless Video Conversion using AWS Elemental MediaConvert
 
+> This is still in beta
+
 AWS Lambda (Python) function triggered when a new video is uploaded to S3. The Lambda function then submits a job to AWS Elemental MediaConvert
 
 This application is useful for scenarios such as:
