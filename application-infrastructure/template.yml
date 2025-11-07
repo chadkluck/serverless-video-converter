@@ -247,7 +247,7 @@ Parameters:
 Conditions:
   IsProduction: !Equals [!Ref DeployEnvironment, "PROD"]
   # IsNotProduction: !Not [!Equals [!Ref DeployEnvironment, "PROD"]]
-  # IsNotDevelopment: !Not [!Equals [!Ref DeployEnvironment, "DEV"]]
+  IsNotDevelopment: !Not [!Equals [!Ref DeployEnvironment, "DEV"]]
   # IsTest: !Equals [!Ref DeployEnvironment, "TEST"]
   # IsDevelopment: !Equals [!Ref DeployEnvironment, "DEV"]
   # CreateProdResources: !Equals [!Ref DeployEnvironment, "PROD"]
@@ -259,6 +259,22 @@ Conditions:
   # IsArmArch: !Equals [!Ref FunctionArchitecture, "arm64"]
   HasLoggingBucket: !Not [!Equals [!Ref S3LogBucketName, ""]]
 
+
+# =============================================================================
+# GLOBALS
+# -----------------------------------------------------------------------------
+# https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-specification-template-anatomy-globals.html
+#
+
+Globals:
+
+  Function:
+    PropagateTags: True
+    Tracing: !If [ IsNotDevelopment, "Active", !Ref 'AWS::NoValue'] # X-Ray
+
+  # StateMachine:
+  #   PropagateTags: True
+  
 # =============================================================================
 # RESOURCES
 # -----------------------------------------------------------------------------
