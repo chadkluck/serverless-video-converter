@@ -338,7 +338,7 @@ Resources:
             Action:
             - iam:PassRole
             Effect: Allow
-            Resource: !GetAtt MediaConvertRole.Arn
+            Resource: !Sub "aws:iam::${AWS::AccountId}:role/${Prefix}-${ProjectId}-${StageId}-MediaConvertRole" # Prevent Circular Reference
           
           - Sid: MediaConvertService
             Action:
@@ -482,7 +482,7 @@ Resources:
       NotificationConfiguration:
         LambdaConfigurations:
           - Event: s3:ObjectCreated:Put
-            Function: !Ref AppFunction'
+            Function: !Ref AppFunction
             Filter:
               S3Key:
                 Rules:
