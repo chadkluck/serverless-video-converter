@@ -3,21 +3,19 @@
 # and limitations under the License.
 #
 # Atlantis for AWS SAM Deployments
-# Starter 01 - Basic API Gateway and Lambda using Python
-# Author: Chad Kluck - 63klabs.net
-# Version: v2.0.2/2025-09-03
+# Adapted from Starter 01 - Basic API Gateway and Lambda using Python
+# Author: Chad Kluck - 63klabs.net/chadkluck.me
+# Version: v0.0.1/2025-11-06
 
 # Documentation, Issues/Feature Requests, Latest Updates, and Security Reports on GitHub:
-# https://github.com/63Klabs/atlantis-starter-00-basic-apigw-lambda-nodejs
-
-# Creates a basic web service using API Gateway and Lambda using Python
+# https://github.com/chadkluck/serverless-video-converter
 
 # USE WITH:
 # - atlantis/v2/pipeline/template.yml
 
 AWSTemplateFormatVersion: "2010-09-09"
 Transform:  AWS::Serverless-2016-10-31
-Description: "A basic web service using API Gateway and Lambda Python - atlantis-starter-01-basic-apigw-lambda-py"
+Description: "AWS Lambda (Python) function triggered when a new video is uploaded to S3. The Lambda function then submits a job to AWS Elemental MediaConvert"
 
 # =============================================================================
 # META DATA
@@ -439,7 +437,7 @@ Resources:
   VideoSourceBucket:
     Type: AWS::S3::Bucket
     DependsOn: 
-    - S3LambdaPermission  # Critical - wait for permission too
+      - S3LambdaPermission
     Properties:
       BucketName: !Join
         - "-"
@@ -525,12 +523,35 @@ Resources:
                 "aws:SourceAccount": !Sub "${AWS::AccountId}"
                 "s3:x-amz-acl": "bucket-owner-full-control"
 
-  # Permission for S3 to invoke the Lambda function
+  # -- Permissions allowing S3 to Execute Lambda --
+  #    For gradual deployments to work properly, S3 needs permission to invoke both:
+  #    1. $LATEST version (new code during deployment)
+  #    2. :live alias (stable version during traffic shifting)
+  #    Without both permissions, gradual deployments (in production) will fail with permission errors
+
+  # Permission for S3 to invoke the $LATEST version of the Lambda function
+  # This is used in all environments and during gradual deployments for new code
   S3LambdaPermission:
     Type: "AWS::Lambda::Permission"
     Properties:
       Action: lambda:InvokeFunction
       FunctionName: !Ref SubmitJobFunction 
+      Principal: s3.amazonaws.com
+      SourceArn: !Join # Avoid circular reference
+        - "-"
+        - - !If [UseS3BucketNameOrgPrefix, !Sub "arn:aws:s3:::${S3BucketNameOrgPrefix}-${Prefix}", !Sub "arn:aws:s3:::${Prefix}" ]
+          - !Sub "${ProjectId}-${StageId}-${AWS::Region}-${AWS::AccountId}-src"
+      SourceAccount: !Ref AWS::AccountId
+
+  # Permission for S3 to invoke the :live alias of the Lambda function
+  # Only created in production where gradual deployments are enabled
+  # During gradual deployment, traffic shifts from :live alias to $LATEST version
+  S3LambdaPermissionLive:
+    Type: "AWS::Lambda::Permission"
+    Condition: IsProduction  # Only needed in production for gradual deployments
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Sub "${SubmitJobFunction}:live"
       Principal: s3.amazonaws.com
       SourceArn: !Join # Avoid circular reference
         - "-"
