@@ -50,7 +50,7 @@ MediaConvert could also be removed from this stack and replaced with an image re
 The video object can be placed in the VideoSourceBucket from the cli:
 
 ```bash
-aws s3 cp large-video-file.mp4 s3://<VideoSourceBucket>/
+aws s3 cp large-video-file.mp4 s3://VIDEO_SOURCE_BUCKET/uploads/
 ```
 
 Or using a separate process such as an online video upload mechanism or other automated process.
@@ -107,7 +107,7 @@ cd ../YOUR_DEVOPS_SAM_CONFIG_REPO
 
 # After it is created you will have a chance to deploy right away or do it later using the deploy.py command.
 # Once deployed, test it out with a SHORT 30 to 60 second video:
-aws s3 cp test-video-file.mp4 s3://VIDEO_SOURCE_BUCKET/PREFIX_PATH/
+aws s3 cp test-video-file.mp4 s3://VIDEO_SOURCE_BUCKET/uploads/
 ```
 
 That's it! Now check the pipeline and CloudFormation progress in the console!
@@ -119,6 +119,73 @@ You will have to have a firm understanding of multi-stack, micro-service archite
 If this is your first time deploying to AWS, or deployments have been difficult to manage in the past and you are looking into automating some of your tasks, please look at 63Klabs Atlantis. (If you traditionally deploy applications through the Web Console, PLEASE look into Atlantis or at least Infrastructure as Code! I have many, many [tutorials to get you started](https://github.com/63Klabs/atlantis-tutorials) deploying production-ready applications!)
 
 If you have a process that works or are using Terraform or other workflow to manage your deployments, then modify the template and function to suit your needs. You can use the template and configurations as guides.
+
+## Checking Events
+
+Of course, in the end if everything works right, you should soon be able to check the MediaConvert queue and subsequently the Output bucket for your video.
+
+However, the process doesn't complete in a matter of seconds, and if there are issues you will be waiting for a long time.
+
+To find if an S3 event triggered, you have several methods available depending on your setup and monitoring needs:
+
+### 1. Check S3 Event Notifications Configuration
+
+First, verify if you have S3 event notifications configured:
+
+1. Go to the Amazon S3 console
+2. Navigate to your bucket
+3. Click the Properties tab
+4. Look for the Event notifications section
+5. Check if you have any event notification configurations set up
+
+### 2. Monitor Event Destinations
+
+If you have S3 event notifications configured correctly, check the destination Lambda function:
+
+- Check CloudWatch Logs for your Lambda function
+- Look for execution logs that indicate the function was triggered
+- Review the function's invocation metrics in the Lambda console
+
+### 3. Use CloudWatch Monitoring
+
+You can monitor S3 events through CloudWatch:
+
+- Check CloudWatch metrics for your S3 bucket
+- Look for request metrics and data transfer metrics
+- Set up CloudWatch alarms for specific S3 activities
+
+### 4. Review CloudTrail Logs
+
+For comprehensive event tracking:
+
+- Enable AWS CloudTrail data events for your S3 bucket
+- Review CloudTrail logs in CloudWatch Logs or S3
+- Look for specific API calls like `GetObject`, `PutObject`, `DeleteObject`
+- Set up CloudWatch metric filters to monitor specific S3 activities
+
+### 5. Troubleshooting S3 Event Notifications
+
+If events aren't triggering as expected:
+
+- Verify Configuration:
+   - Check prefix and suffix settings in your event notification
+   - Ensure object keys match your naming guidelines
+   - Confirm special characters are URL-encoded
+- Check Permissions:
+   - For Lambda: Ensure the resource-based policy allows S3 to invoke the function
+- Timing Considerations:
+   - S3 event notifications usually deliver within seconds but can take up to 1 minute
+   - Events are delivered at least once but may arrive out of order or as duplicates
+
+### 6. Test Your Setup
+
+You can test if events are working by:
+
+- Uploading a test file to your S3 bucket
+- Performing the action that should trigger the event
+- Checking your configured destinations for the notification
+
+Remember that S3 supports various event types including object creation. Make sure your notification configuration includes the specific event types you want to monitor.
 
 ## Configuration
 
