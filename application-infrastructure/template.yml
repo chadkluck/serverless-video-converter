@@ -300,7 +300,7 @@ Resources:
           PARAM_STORE_PATH: !Ref ParameterStoreHierarchy # Path to instance specific params /Finance/ops/PROD/acme-myapp-prod/
           LAMBDA_TIMEOUT_IN_SEC: !Ref FunctionTimeOutInSeconds # so we can calculate any external connection timeout in our code
 
-          MEDIA_CONVERT_ROLE: !GetAtt MediaConvertRole.Arn # Role to use for MediaConvert jobs
+          MEDIA_CONVERT_ROLE: !Sub "aws:iam::${AWS::AccountId}:role/${Prefix}-${ProjectId}-${StageId}-MediaConvertRole" # Prevent Circular Reference
           VIDEO_OUTPUT_BUCKET: !Ref VideoOutputBucket # S3 Bucket to store converted videos
           VIDEO_OUTPUT_PREFIX: !Ref VideoOutputPrefix # S3 Prefix (folder) within the output bucket where converted videos will be stored
 
@@ -347,24 +347,6 @@ Resources:
             - mediaconvert:GetJob
             Effect: Allow
             Resource: "*"
-
-          - Sid: S3Service
-            Action:
-            - s3:GetObject
-            - s3:PutObject
-            - s3:GetBucketLocation
-            Effect: Allow
-            Resource: "*"
-            
-  # Permission for S3 to invoke the Lambda function
-  S3LambdaPermission:
-    Type: "AWS::Lambda::Permission"
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !Ref AppFunction
-      Principal: s3.amazonaws.com
-      SourceArn: !GetAtt VideoSourceBucket.Arn
-      SourceAccount: !Ref AWS::AccountId
 
   # -- Lambda Function Error Alarm --
 
@@ -540,6 +522,16 @@ Resources:
               StringEquals:
                 "aws:SourceAccount": !Sub "${AWS::AccountId}"
                 "s3:x-amz-acl": "bucket-owner-full-control"
+
+  # Permission for S3 to invoke the Lambda function
+  S3LambdaPermission:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:  !Sub '${Prefix}-${ProjectId}-${StageId}-AppFunction' # Avoid circular reference !Sub "/aws/lambda/${AppFunction}"
+      Principal: s3.amazonaws.com
+      SourceArn: !GetAtt VideoSourceBucket.Arn
+      SourceAccount: !Ref AWS::AccountId
 
 # =============================================================================
 # OUTPUTS
