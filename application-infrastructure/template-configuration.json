@@ -1,6 +1,6 @@
 {
   "Parameters": {
-    "VideoOutputBucket": "$S3StaticHostBucket$",
+    "VideoOutputBucket": "$S3_STATIC_HOST_BUCKET$",
     "VideoOutputPrefix": "/$STAGE_ID$/public/videos/"
   },
   "Tags": {
