@@ -22,7 +22,7 @@ This application stack is used in conjunction with S3 fronted by CloudFront and 
 1. User (or process) uploads a video file to S3 bucket (`VideoSourceBucket`)
 2. S3 triggers Lambda function (`SubmitJobFunction`)
 3. Lambda function submits a job to AWS Elemental MediaConvert to transcode the video into
-   multiple formats and resolutions
+   multiple formats and resolutions. The job contains information on where to put the output and the IAM Role to use.
 4. Transcoded videos are saved to another S3 bucket (`VideoOutputBucket`)
 
 ```mermaid
@@ -105,9 +105,9 @@ cd ../YOUR_DEVOPS_SAM_CONFIG_REPO
 # choose the template-pipeline.yml template when asked
 # Follow the prompts (for S3StaticBucket you will use the bucket name of your Output bucket)
 
-# After it is created you will have a chance to deploy right away, or do it later using the deploy.py command.
+# After it is created you will have a chance to deploy right away or do it later using the deploy.py command.
 # Once deployed, test it out with a SHORT 30 to 60 second video:
-aws s3 cp test-video-file.mp4 s3://<VideoSourceBucket>/
+aws s3 cp test-video-file.mp4 s3://VIDEO_SOURCE_BUCKET/PREFIX_PATH/
 ```
 
 That's it! Now check the pipeline and CloudFormation progress in the console!
@@ -118,7 +118,7 @@ You will have to have a firm understanding of multi-stack, micro-service archite
 
 If this is your first time deploying to AWS, or deployments have been difficult to manage in the past and you are looking into automating some of your tasks, please look at 63Klabs Atlantis. (If you traditional deploy applications through the Web Console, PLEASE look into Atlantis or at least Infrastructure as Code! I have many, many [tutorials to get you started](https://github.com/63Klabs/atlantis-tutorials) deploying production-ready applications!)
 
-If you have a process that works, then modify the template and function to suit your needs. You can use the template and configurations as guides.
+If you have a process that works or are using Terraform or other workflow to manage your deployments, then modify the template and function to suit your needs. You can use the template and configurations as guides.
 
 ## Configuration
 
