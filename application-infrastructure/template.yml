@@ -264,10 +264,10 @@ Resources:
   # Lambda Function Resources
 
   # -- Lambda Function --
-  AppFunction:
+  SubmitJobFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub '${Prefix}-${ProjectId}-${StageId}-AppFunction'
+      FunctionName: !Sub '${Prefix}-${ProjectId}-${StageId}-SubmitJobFunction'
       Description: "Submits jobs to Media Converter"
       Role: !GetAtt LambdaExecutionRole.Arn
       PropagateTags: True
@@ -282,7 +282,7 @@ Resources:
         Alarms:
           Fn::If:
             - CreateAlarms
-            - - !Ref AppFunctionErrorsAlarm
+            - - !Ref SubmitJobFunctionErrorsAlarm
             - - !Ref 'AWS::NoValue'
 
       CodeUri: src/
@@ -350,7 +350,7 @@ Resources:
 
   # -- Lambda Function Error Alarm --
 
-  AppFunctionErrorsAlarm:
+  SubmitJobFunctionErrorsAlarm:
     Type: "AWS::CloudWatch::Alarm"
     Condition: CreateAlarms # Either PROD or ALWAYS - Check Conditions
     Properties:
@@ -365,13 +365,13 @@ Resources:
       Namespace: AWS/Lambda
       Dimensions:
         - Name: FunctionName
-          Value: !Ref AppFunction
+          Value: !Ref SubmitJobFunction
       AlarmActions:
-        - Ref: AppFunctionErrorAlarmNotification
+        - Ref: SubmitJobFunctionErrorAlarmNotification
 
   # -- Lambda Function Notification for Error Alarm --
 
-  AppFunctionErrorAlarmNotification:
+  SubmitJobFunctionErrorAlarmNotification:
       Type: AWS::SNS::Topic
       Condition: CreateAlarms
       Properties: 
@@ -387,7 +387,7 @@ Resources:
     DeletionPolicy: Delete
     UpdateReplacePolicy: Retain
     Properties: 
-        LogGroupName: !Sub '/aws/lambda/${Prefix}-${ProjectId}-${StageId}-AppFunction' # Avoid circular reference !Sub "/aws/lambda/${AppFunction}"
+        LogGroupName: !Sub '/aws/lambda/${Prefix}-${ProjectId}-${StageId}-SubmitJobFunction' # Avoid circular reference !Sub "/aws/lambda/${SubmitJobFunction}"
         RetentionInDays: !If [ IsProduction, !Ref LogRetentionInDaysForPROD,  !Ref LogRetentionInDaysForDEVTEST]
 
   # ---------------------------------------------------------------------------
@@ -481,7 +481,7 @@ Resources:
       NotificationConfiguration:
         LambdaConfigurations:
           - Event: s3:ObjectCreated:Put
-            Function: !Ref AppFunction
+            Function: !GetAtt SubmitJobFunction.Arn
             Filter:
               S3Key:
                 Rules:
@@ -528,7 +528,7 @@ Resources:
     Type: "AWS::Lambda::Permission"
     Properties:
       Action: lambda:InvokeFunction
-      FunctionName:  !Sub '${Prefix}-${ProjectId}-${StageId}-AppFunction' # Avoid circular reference !Sub "/aws/lambda/${AppFunction}"
+      FunctionName:  !Sub '${Prefix}-${ProjectId}-${StageId}-SubmitJobFunction' # Avoid circular reference !Sub "/aws/lambda/${SubmitJobFunction}"
       Principal: s3.amazonaws.com
       SourceArn: !GetAtt VideoSourceBucket.Arn
       SourceAccount: !Ref AWS::AccountId
@@ -547,12 +547,12 @@ Outputs:
   # -- CloudWatch Log Groups
   CloudWatchLambdaExecutionLogGroup:
     Description: "Cloud Watch Log Group for Lambda Execution Logs"
-    Value: !Sub "https://console.aws.amazon.com/cloudwatch/home?region=${AWS::Region}#logStream:group=%2Faws%2Flambda%2F${AppFunction}"
+    Value: !Sub "https://console.aws.amazon.com/cloudwatch/home?region=${AWS::Region}#logStream:group=%2Faws%2Flambda%2F${SubmitJobFunction}"
 
   # -- Resource quick links
   LambdaWebConsole:
     Description: "Lambda Web Console"
-    Value: !Sub "https://console.aws.amazon.com/lambda/home?region=${AWS::Region}#/functions/${AppFunction}?tab=code"
+    Value: !Sub "https://console.aws.amazon.com/lambda/home?region=${AWS::Region}#/functions/${SubmitJobFunction}?tab=code"
 
   ParameterStore:
     Description: "SSM Parameter Store"
