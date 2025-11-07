@@ -358,37 +358,6 @@ Resources:
             Effect: Allow
             Resource: "*"
             
-
-  # -- Lambda permissions allowing API Gateway to Execute it --
-  #    For gradual deployments to work properly, API Gateway needs permission to invoke both:
-  #    1. $LATEST version (new code during deployment)
-  #    2. :live alias (stable version during traffic shifting)
-  #    Without both permissions, gradual deployments (in production) will fail with permission errors
-
-  # Permission for API Gateway to invoke the $LATEST version of the Lambda function
-  # This is used in all environments and during gradual deployments for new code
-  ConfigLambdaPermission:
-    Type: "AWS::Lambda::Permission"
-    DependsOn: AppFunction
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !Sub "${AppFunction}"  # References $LATEST by default
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebApi}/*"
-
-  # Permission for API Gateway to invoke the :live alias of the Lambda function
-  # Only created in production where gradual deployments are enabled
-  # During gradual deployment, traffic shifts from :live alias to $LATEST version
-  ConfigLambdaPermissionLive:
-    Type: "AWS::Lambda::Permission"
-    Condition: IsProduction  # Only needed in production for gradual deployments
-    DependsOn: AppFunction
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !Sub "${AppFunction}:live"  # Explicitly references the :live alias
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebApi}/*"
-
   # Permission for S3 to invoke the Lambda function
   S3LambdaPermission:
     Type: "AWS::Lambda::Permission"

@@ -1,13 +1,13 @@
 {
   "Parameters": {
-    "ApiPathBase": "$PROJECT_ID$-$STAGE_ID$",
-    "ApiGatewayLoggingEnabled": "FALSE"
+    "VideoOutputBucket": "$S3StaticHostBucket$",
+    "VideoOutputPrefix": "/$STAGE_ID$/public/videos/"
   },
   "Tags": {
-    "Name": "Hello World Web Service API $PREFIX$-$PROJECT_ID$",
+    "Name": "Video Converter $PREFIX$-$PROJECT_ID$",
     "CostCenter": "1234-X",
-    "Creator": "nowhere@example",
-    "Owner": "nowhere@example",
+    "Creator": "$ALARM_NOTIFICATION_EMAIL$",
+    "Owner": "$ALARM_NOTIFICATION_EMAIL$",
     "Department": "Web Services",
     "Function": "web-service",
 
