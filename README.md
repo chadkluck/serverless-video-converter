@@ -29,11 +29,11 @@ This application stack is used in conjunction with S3 fronted by CloudFront and 
 flowchart TD
     A[User uploads video file] -.->|"1. Upload"| B[S3: VideoSourceBucket]
     B -->|"2. Trigger"| C[Lambda: SubmitJobFunction]
-    C -->|"3. Submit job"| D[AWS Elemental MediaConvert]
-    D -->|"4. Save transcoded videos"| E[VideoOutputBucket]
+    C -.->|"3. Submit job"| D[AWS Elemental MediaConvert]
+    D -.->|"4. Save transcoded videos"| E[VideoOutputBucket]
 ```
 
-To maintain a micro-service, this stack ONLY manages proccessing of the video. It is part of a process chain.
+To maintain a micro-service, this stack ONLY manages processing of the video. It is part of a process chain.
 
 You will still need a mechanism to upload to the `VideoSourceBucket` (CLI or web based site) and an `VideoOutputBucket` that can be fronted by CloudFront. (Additional templates are provided by 63Klabs to maintain the S3 fronted by CloudFront stacks)
 
