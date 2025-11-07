@@ -332,7 +332,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Sub "${Prefix}-${ProjectId}-${StageId}-LambdaExecRole"
-      Description: "IAM Role that allows the Lambda permission to execute and access resources"
+      Description: "IAM Role that allows the Lambda function permission to execute and access resources"
       Path: !Ref RolePath
       PermissionsBoundary: !If [HasPermissionsBoundaryArn, !Ref PermissionsBoundaryArn, !Ref 'AWS::NoValue' ]
       AssumeRolePolicyDocument:
@@ -420,7 +420,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Sub "${Prefix}-${ProjectId}-${StageId}-MediaConvertRole"
-      Description: "IAM Role that Lambda passes to MediaConvert"
+      Description: "IAM Role that Lambda passes with a job submission to MediaConvert so it has access to the VideoSource and VideoOutput buckets"
       Path: !Ref RolePath
       PermissionsBoundary: !If [HasPermissionsBoundaryArn, !Ref PermissionsBoundaryArn, !Ref 'AWS::NoValue' ]
       AssumeRolePolicyDocument:
