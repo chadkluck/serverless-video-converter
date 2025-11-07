@@ -51,6 +51,9 @@ Metadata:
         Parameters:
           - ParameterStoreHierarchy
           - AlarmNotificationEmail
+          - VideoOutputBucket
+          - VideoOutputPrefix
+          - S3LogBucketName
       -
         Label:
           default: "Lambda Function Settings"
@@ -129,7 +132,7 @@ Parameters:
     Default: "/"
     AllowedPattern: "^\\/([a-zA-Z0-9_.\\-]*[\\/])+$|^\\/$"
     ConstraintDescription: "Must only contain alpha-numeric, dashes, underscores, or slashes. Must be a single slash or begin and end with a slash. (/Finance/, /Finance/ops/, or /)"
-
+    
   # ---------------------------------------------------------------------------
   # Deployment Environment Identification
 
@@ -168,6 +171,29 @@ Parameters:
     AllowedPattern: "^[\\w\\-\\.]+@([\\w\\-]+\\.)+[\\w\\-]{2,4}$"
     ConstraintDescription: "A valid email address"
 
+  VideoOutputBucket:
+    Type: String
+    Description: "S3 Bucket name where converted videos will be stored."
+    AllowedPattern: "^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$"
+    MinLength: 3
+    MaxLength: 63
+    ConstraintDescription: "3 to 63 characters. Lower case alphanumeric, periods, and dashes. Must start and end with a letter or number."
+
+  VideoOutputPrefix:
+    Type: String
+    Description: "S3 Prefix (folder) within the output bucket where converted videos will be stored."
+    Default: "/"
+    AllowedPattern: "^\\/([a-zA-Z0-9-_]+[\\/])+$|^\\/$"
+    MaxLength: 128
+    ConstraintDescription: "0 to 128 characters. Alphanumeric, hyphens, underscores, periods, and slashes."
+
+  S3LogBucketName:
+    Type: String
+    Description: "The name of the S3 bucket used for logging. This is a required parameter for the S3 bucket."
+    Default: ""
+    AllowedPattern: "^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$|^$"
+    ConstraintDescription: "Must be a valid S3 bucket name or empty. Must be between 3 and 63 characters long. Lower case alphanumeric and dashes. Must start and end with a letter or number."
+
   # ---------------------------------------------------------------------------
   # Lambda Function Settings
 
@@ -195,15 +221,6 @@ Parameters:
   # ---------------------------------------------------------------------------
   # Application Parameters
 
-  ApiPathBase:
-    Type: String
-    Description: "The path API Gateway uses as the first segment in the invoked Uniform Resource Identifier (URI). Since API Gateway generates random characters for the domain, it can be helpful to use this in identifying applications and stages. If a custom domain is used it can be masked and hidden from visitors. For example: xyz08ryz.apigateway.aws.com/pets or xyz08ryz.apigateway.aws.com/myapp or xyz08ryz.apigateway.aws.com/myapp-test. It is recommended you set this in the template-config.json file and allow the stage to be dynamically appended."
-    Default: "api"
-    AllowedPattern: ^[a-z0-9]([a-z0-9-_]*[a-z0-9])?$
-    MaxLength: 128
-    MinLength: 1
-    ConstraintDescription: "1-128 lowercase alpha numeric, hyphens, and underscores. Must begin and end with an alphanumeric character."
-
   LogRetentionInDaysForPROD:
     Type: Number
     Description: "How long should CloudWatch logs be kept in a PRODUCTION environment?"
@@ -215,12 +232,6 @@ Parameters:
     Description: "How long should CloudWatch logs be kept in a DEV or TEST environment?"
     Default: 7
     AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
-
-  ApiGatewayLoggingEnabled:
-    Type: String
-    Description: "An administrator must enable API Gateway logging account-wide prior to setting this to TRUE. See https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-logging.html"
-    Default: "FALSE"
-    AllowedValues: ["TRUE", "FALSE"]
 
 # =============================================================================
 # CONDITIONS
@@ -237,21 +248,11 @@ Conditions:
   # CreateProdResources: !Equals [!Ref DeployEnvironment, "PROD"]
   # CreateTestResources: !Equals [!Ref DeployEnvironment, "TEST"]
   # CreateDevResources: !Equals [!Ref DeployEnvironment, "DEV"]
-  # UseS3BucketNameOrgPrefix: !Not [!Equals [!Ref S3BucketNameOrgPrefix, ""]]
+  UseS3BucketNameOrgPrefix: !Not [!Equals [!Ref S3BucketNameOrgPrefix, ""]]
   HasPermissionsBoundaryArn: !Not [!Equals [!Ref PermissionsBoundaryArn, ""]]
   CreateAlarms: !Equals [!Ref DeployEnvironment, "PROD"] 
   # IsArmArch: !Equals [!Ref FunctionArchitecture, "arm64"]
-  ApiGatewayLoggingIsEnabled: !Equals [!Ref ApiGatewayLoggingEnabled, "TRUE"]
-
-# =============================================================================
-# GLOBALS
-# -----------------------------------------------------------------------------
-# https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-specification-template-anatomy-globals.html
-#
-
-Globals:
-  Api:
-    OpenApiVersion: 3.0.0 # Prevents extra stage called Stage in API Gateway https://www.internetkatta.com/how-to-prevent-aws-sam-from-creating-the-default-stage-in-api-gateway-stage
+  HasLoggingBucket: !Not [!Equals [!Ref S3LogBucketName, ""]]
 
 # =============================================================================
 # RESOURCES
@@ -262,57 +263,6 @@ Globals:
 Resources:
 
   # ---------------------------------------------------------------------------
-  # API Gateway Resources
-
-  # -- API Gateway --
-  WebApi:
-    Type: AWS::Serverless::Api
-    Properties: 
-      Name: !Sub '${Prefix}-${ProjectId}-${StageId}-WebApi'
-      StageName: !Ref ApiPathBase
-
-      # -- The following adds two levels of logging to API Gateway --
-      # -- However, an account admin will need to add a service role to allow API Gateway to write to CloudWatch logs --
-      # -- See https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-logging.html --
-
-      # Add API Gateway logging configuration
-      AccessLogSetting: !If
-        - ApiGatewayLoggingIsEnabled
-        - DestinationArn: !GetAtt ApiGatewayAccessLogGroup.Arn
-          Format: '{"requestId":"$context.requestId", "extendedRequestId":"$context.extendedRequestId", "ip":"$context.identity.sourceIp", "caller":"$context.identity.caller", "user":"$context.identity.user", "requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod", "path":"$context.path", "resourcePath":"$context.resourcePath", "routeKey":"$context.routeKey", "status":"$context.status", "protocol":"$context.protocol", "responseLength":"$context.responseLength", "integrationError":"$context.integrationErrorMessage", "authorizerError":"$context.authorizer.error", "authorizerStatus":"$context.authorizer.status", "authorizerLatency":"$context.authorizer.latency"}'
-        - !Ref 'AWS::NoValue'
-      
-      # Add execution logging to CloudWatch
-      MethodSettings: !If
-        - ApiGatewayLoggingIsEnabled
-        - - LoggingLevel: !If [IsProduction, 'ERROR', 'INFO']
-            ResourcePath: '/*'
-            HttpMethod: '*'
-            DataTraceEnabled: !If [IsProduction, False, True]
-            MetricsEnabled: True
-        - !Ref 'AWS::NoValue'
-  
-  # Add CloudWatch Log Group for API Gateway Access Logs
-  ApiGatewayAccessLogGroup:
-    Type: AWS::Logs::LogGroup
-    Condition: ApiGatewayLoggingIsEnabled
-    DeletionPolicy: !If [IsProduction, Retain, Delete]
-    UpdateReplacePolicy: Retain
-    Properties:
-      LogGroupName: !Sub '/aws/apigateway/${Prefix}-${ProjectId}-${StageId}-WebApi-access-logs'
-      RetentionInDays: !If [ IsProduction, !Ref LogRetentionInDaysForPROD,  !Ref LogRetentionInDaysForDEVTEST]
-
-  # Add CloudWatch Log Group for API Gateway Execution Logs
-  ApiGatewayExecutionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Condition: ApiGatewayLoggingIsEnabled
-    DeletionPolicy: !If [IsProduction, Retain, Delete]
-    UpdateReplacePolicy: Retain
-    Properties:
-      LogGroupName: !Sub 'API-Gateway-Execution-Logs_${WebApi}/${ApiPathBase}' # AWS default
-      RetentionInDays: !If [ IsProduction, !Ref LogRetentionInDaysForPROD,  !Ref LogRetentionInDaysForDEVTEST]
-
-  # ---------------------------------------------------------------------------
   # Lambda Function Resources
 
   # -- Lambda Function --
@@ -320,12 +270,12 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub '${Prefix}-${ProjectId}-${StageId}-AppFunction'
-      Description: "Magical Predictions"
+      Description: "Submits jobs to Media Converter"
       Role: !GetAtt LambdaExecutionRole.Arn
       PropagateTags: True
 
       VersionDescription: "Development Stages"
-      AutoPublishCodeSha256: "20250226T0936" # Hash This To Overcome AliasLive Update Errors - Undocumented AWS bug workaround
+      AutoPublishCodeSha256: "20251106T0936" # Hash This To Overcome AliasLive Update Errors - Undocumented AWS bug workaround
       AutoPublishAlias: live
       DeploymentPreference:
         Enabled: !If [ IsProduction, True,  False] # Gradual deployment only if in production so DEV and TEST aren't hindered
@@ -352,13 +302,9 @@ Resources:
           PARAM_STORE_PATH: !Ref ParameterStoreHierarchy # Path to instance specific params /Finance/ops/PROD/acme-myapp-prod/
           LAMBDA_TIMEOUT_IN_SEC: !Ref FunctionTimeOutInSeconds # so we can calculate any external connection timeout in our code
 
-      Events:
-        GetEvent:
-          Type: Api
-          Properties:
-            Path: /
-            Method: get
-            RestApiId: !Ref WebApi
+          MEDIA_CONVERT_ROLE: !GetAtt MediaConvertRole.Arn # Role to use for MediaConvert jobs
+          VIDEO_OUTPUT_BUCKET: !Ref VideoOutputBucket # S3 Bucket to store converted videos
+          VIDEO_OUTPUT_PREFIX: !Ref VideoOutputPrefix # S3 Prefix (folder) within the output bucket where converted videos will be stored
 
   # -- LambdaFunction Execution Role --
   LambdaExecutionRole:
@@ -390,6 +336,29 @@ Resources:
             Effect: Allow
             Resource: !GetAtt AppLogGroup.Arn
 
+          - Sid: PassMediaConvertRole
+            Action:
+            - iam:PassRole
+            Effect: Allow
+            Resource: !GetAtt MediaConvertRole.Arn
+          
+          - Sid: MediaConvertService
+            Action:
+            - mediaconvert:CreateJob
+            - mediaconvert:DescribeEndpoints
+            - mediaconvert:GetJob
+            Effect: Allow
+            Resource: "*"
+
+          - Sid: S3Service
+            Action:
+            - s3:GetObject
+            - s3:PutObject
+            - s3:GetBucketLocation
+            Effect: Allow
+            Resource: "*"
+            
+
   # -- Lambda permissions allowing API Gateway to Execute it --
   #    For gradual deployments to work properly, API Gateway needs permission to invoke both:
   #    1. $LATEST version (new code during deployment)
@@ -419,6 +388,15 @@ Resources:
       FunctionName: !Sub "${AppFunction}:live"  # Explicitly references the :live alias
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebApi}/*"
+
+  # Permission for S3 to invoke the Lambda function
+  S3LambdaPermission:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref AppFunction
+      Principal: s3.amazonaws.com
+      SourceArn: !GetAtt VideoSourceBucket.Arn
 
   # -- Lambda Function Error Alarm --
 
@@ -462,6 +440,138 @@ Resources:
         LogGroupName: !Sub '/aws/lambda/${Prefix}-${ProjectId}-${StageId}-AppFunction' # Avoid circular reference !Sub "/aws/lambda/${AppFunction}"
         RetentionInDays: !If [ IsProduction, !Ref LogRetentionInDaysForPROD,  !Ref LogRetentionInDaysForDEVTEST]
 
+  # ---------------------------------------------------------------------------
+  # Media Convert Role to Pass
+
+  MediaConvertRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${Prefix}-${ProjectId}-${StageId}-MediaConvertRole"
+      Description: "IAM Role that Lambda passes to Media Converter"
+      Path: !Ref RolePath
+      PermissionsBoundary: !If [HasPermissionsBoundaryArn, !Ref PermissionsBoundaryArn, !Ref 'AWS::NoValue' ]
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: [mediaconvert.amazonaws.com]
+          Action: sts:AssumeRole
+
+      # These are the resources your Lambda function needs access to Logs, SSM Parameters, DynamoDb, S3, etc.
+      # Define specific actions such as get/put (read/write). Work towards practicing the Principle of Least Privilege
+      Policies:
+      - PolicyName: !Sub "${Prefix}-${ProjectId}-${StageId}-ExecutionPolicy"
+        PolicyDocument:
+          Statement:
+
+          - Sid: AccessToS3SourceBucket
+            Action:
+            - s3:GetObject
+            - s3:GetBucketLocation
+            Effect: Allow
+            Resource:
+            - !Sub "arn:aws:s3:::${VideoSourceBucket}"
+            - !Sub "arn:aws:s3:::${VideoSourceBucket}/uploads/*"
+
+          - Sid: AccessToS3DestinationBucket
+            Action:
+            - s3:PutObject
+            - s3:PutObjectAcl
+            - s3:GetBucketLocation
+            Effect: Allow
+            Resource:
+            - !Sub "arn:aws:s3:::${VideoOutputBucket}"
+            - !Sub "arn:aws:s3:::${VideoOutputBucket}${VideoOutputBucketPrefix}*"
+
+  # ---------------------------------------------------------------------------
+  # Source Bucket
+
+  VideoSourceBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Join
+        - "-"
+        - - !If [UseS3BucketNameOrgPrefix, !Sub "${S3BucketNameOrgPrefix}-${Prefix}", !Sub "${Prefix}" ]
+          - !Sub "${ProjectId}-${StageId}-${AWS::Region}-${AWS::AccountId}-src"
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LoggingConfiguration: !If
+      - HasLoggingBucket
+      - DestinationBucketName: !Ref S3LogBucketName
+        LogFilePrefix: !Join
+          - "-"
+          - - !If [UseS3BucketNameOrgPrefix, !Sub "${S3BucketNameOrgPrefix}-${Prefix}", !Sub "${Prefix}" ]
+            - !Sub "${ProjectId}-${AWS::Region}-${AWS::AccountId}"
+      - !Ref AWS::NoValue
+      LifecycleConfiguration:
+        Rules:
+          - Id: "ExpireObjects"
+            Prefix: "uploads" # this will limit this policy to YOURBUCKETNAME/uploads/*
+            Status: "Enabled" # Enable only if you are going to use this LifecycleConfiguration
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 1
+            NoncurrentVersionExpirationInDays: 7
+          - Id: "MoveCurrentVersionToGlacier"
+            Prefix: "uploads"
+            Status: "Enabled" # Enable only if you are going to use this LifecycleConfiguration
+            Transitions:
+              - TransitionInDays: 30
+                StorageClass: GLACIER
+          - Id: "DeleteOldUploads"
+            Prefix: "uploads"
+            Status: "Disabled" # Enable only if you are going to use this LifecycleConfiguration
+            ExpirationInDays: 365
+      NotificationConfiguration:
+        LambdaConfigurations:
+          - Event: s3:ObjectCreated:Put
+            Function: !GetAtt AppFunction.Arn
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: prefix
+                    Value: "uploads/"
+                  - Name: suffix
+                    Value: ".mp4"
+
+  # -- S3 Bucket Policy --
+
+  VideoSourceBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref VideoSourceBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Id: SecurityPolicy
+        Statement:
+          - Sid: "DenyNonSecureTransportAccess"
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !Sub "arn:aws:s3:::${VideoSourceBucket}"
+              - !Sub "arn:aws:s3:::${VideoSourceBucket}/*"
+            Condition:
+              Bool:
+                "aws:SecureTransport": false
+
+          - Sid: "EnforceBucketOwnerFullControlOnUploads"
+            Effect: Allow
+            Action:
+            - s3:PutObject
+            Resource:
+              - !Sub "arn:aws:s3:::${VideoSourceBucket}/uploads/*"
+            Condition:
+              StringEquals:
+                "aws:SourceAccount": !Sub "${AWS::AccountId}"
+                "s3:x-amz-acl": "bucket-owner-full-control"
+
 # =============================================================================
 # OUTPUTS
 # -----------------------------------------------------------------------------
@@ -472,11 +582,6 @@ Resources:
 #
 
 Outputs:
-
-  # -- Endpoint examples
-  ApiEndpoint:
-    Description: "Endpoint URL"
-    Value: !Sub "https://${WebApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiPathBase}/" # change to your endpoint
 
   # -- CloudWatch Log Groups
   CloudWatchLambdaExecutionLogGroup:
