@@ -25,6 +25,7 @@ This application stack is used in conjunction with S3 fronted by CloudFront and 
    multiple formats and resolutions
 4. Transcoded videos are saved to another S3 bucket (`VideoOutputBucket`)
 
+```mermaid
 flowchart LR
     A[User uploads video file] --> B[VideoSourceBucket]
     B --> C[S3 triggers Lambda]
@@ -36,6 +37,7 @@ flowchart LR
     B -.->|"2. Trigger"| D
     D -.->|"3. Submit job"| E
     E -.->|"4. Save transcoded videos"| F
+```
 
 To maintain a micro-service, this stack ONLY manages proccessing of the video. It is part of a process chain.
 
