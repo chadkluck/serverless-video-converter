@@ -204,6 +204,10 @@ The video output formats and resolutions are defined within the Lambda function 
 
 > Note: If you do not require 4K video outputs (or SD, etc), then you can remove them from the job specification as it will save you money.
 
+#### Watermarking
+
+You can add watermarking to the MediaConvert job by modifying the `job.json` file used in the Lambda function. See the [Adding Water Marking to job.json](./docs/README-Watermarking.md) documentation for details on how to implement watermarking in your MediaConvert jobs.
+
 ## Captions
 
 MediaConvert does accept caption files as part of the job submission. You will need to ensure the caption file is available prior to submitting the job to MediaConvert. This can be baked into a preprocess. For example, the S3 triggers only on `.mp4` file uploads (you could include additional video formats as well). You could have a previous process generate a transcript and place the caption file in the same `VideoSourceBucket` prior to uploading the video file. The Lambda function can then receive the event for the video file and check to see if there is a companion transcript. If there is then submit that with the job.
@@ -217,6 +221,7 @@ This application can be extended in many ways by making it part of a chain of mi
 - Integrate with AWS Transcribe to generate captions automatically.
 
 When extending, it is important to maintain separation of concerns. Think of separate micro-services in a chain, each performing ONE duty. Use event driven architecture and step functions to orchestrate processing. Implement automation and checks such as not submitting a video with no audio, or only orchestral music, to Transcribe. Ensure there are places where a human can verify, intervene, or approve (step functions are great for this) to prevent unnecessary processing.
+
 
 ## Author
 
