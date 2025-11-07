@@ -64,10 +64,8 @@ Metadata:
         Label:
           default: "Application Parameters"
         Parameters:
-          - ApiPathBase
           - LogRetentionInDaysForPROD
           - LogRetentionInDaysForDEVTEST
-          - ApiGatewayLoggingEnabled
 
 # =============================================================================
 # PARAMETERS
@@ -366,6 +364,7 @@ Resources:
       FunctionName: !Ref AppFunction
       Principal: s3.amazonaws.com
       SourceArn: !GetAtt VideoSourceBucket.Arn
+      SourceAccount: !Ref AWS::AccountId
 
   # -- Lambda Function Error Alarm --
 
@@ -450,7 +449,7 @@ Resources:
             Effect: Allow
             Resource:
             - !Sub "arn:aws:s3:::${VideoOutputBucket}"
-            - !Sub "arn:aws:s3:::${VideoOutputBucket}${VideoOutputBucketPrefix}*"
+            - !Sub "arn:aws:s3:::${VideoOutputBucket}${VideoOutputPrefix}*"
 
   # ---------------------------------------------------------------------------
   # Source Bucket
@@ -500,7 +499,7 @@ Resources:
       NotificationConfiguration:
         LambdaConfigurations:
           - Event: s3:ObjectCreated:Put
-            Function: !GetAtt AppFunction.Arn
+            Function: !Sub '/aws/lambda/${Prefix}-${ProjectId}-${StageId}-AppFunction' # Avoid circular reference
             Filter:
               S3Key:
                 Rules:
@@ -532,6 +531,7 @@ Resources:
 
           - Sid: "EnforceBucketOwnerFullControlOnUploads"
             Effect: Allow
+            Principal: "*"
             Action:
             - s3:PutObject
             Resource:
@@ -557,16 +557,6 @@ Outputs:
     Description: "Cloud Watch Log Group for Lambda Execution Logs"
     Value: !Sub "https://console.aws.amazon.com/cloudwatch/home?region=${AWS::Region}#logStream:group=%2Faws%2Flambda%2F${AppFunction}"
 
-  CloudWatchApiGatewayExecutionLogGroup:
-    Condition: ApiGatewayLoggingIsEnabled
-    Description: "Cloud Watch Log Group for API Gateway Execution Logs"
-    Value: !Sub "https://console.aws.amazon.com/cloudwatch/home?region=${AWS::Region}#logStream:group=%2Faws%2Fapigateway%2FAPI-Gateway-Execution-Logs_${WebApi}/${ApiPathBase}"
-
-  CloudWatchApiGatewayAccessLogGroup:
-    Condition: ApiGatewayLoggingIsEnabled
-    Description: "Cloud Watch Log Group for API Gateway Access Logs"
-    Value: !Sub "https://console.aws.amazon.com/cloudwatch/home?region=${AWS::Region}#logStream:group=%2Faws%2Fapigateway%2F${Prefix}-${ProjectId}-${StageId}-WebApi-access-logs"
-
   # -- Resource quick links
   LambdaWebConsole:
     Description: "Lambda Web Console"
@@ -575,3 +565,15 @@ Outputs:
   ParameterStore:
     Description: "SSM Parameter Store"
     Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/systems-manager/parameters/?region=${AWS::Region}&tab=Table#list_parameter_filters=Name:Contains:${ParameterStoreHierarchy}"
+
+  SourceBucket:
+    Description: "S3 Source Bucket"
+    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/s3/buckets/${VideoSourceBucket}?region=${AWS::Region}&tab=objects"
+
+  SourceBucketArn:
+    Description: "S3 Source Bucket ARN"
+    Value: !Sub "aws:s3:::${VideoSourceBucket}"
+
+  DestinationBucket:
+    Description: "S3 Destination Bucket"
+    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/s3/buckets/${VideoOutputBucket}?region=${AWS::Region}&tab=objects"
