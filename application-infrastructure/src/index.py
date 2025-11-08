@@ -54,11 +54,16 @@ def handler(event, context):
 
         job_settings['Inputs'][0]['FileInput'] = source_s3
 
+        # Use the name of the source_s3 file as the name of the output prefix
+        # For example if we receive s3://mybucket/uploads/my-video.mp4 then create the prefix my-video
+        output_prefix = os.path.splitext(os.path.basename(source_s3))[0]
+
+        destination_s3 = f's3://{os.environ["VIDEO_OUTPUT_BUCKET"]}{os.environ["VIDEO_OUTPUT_PREFIX"]}/{output_prefix}'
+
+        print('Destination: ' + destination_s3)
+
         # The path of each output video is constructed based on the values of 
         # the attributes in each object of OutputGroups in the job.json file. 
-        destination_s3 = f's3://{os.environ["VIDEO_OUTPUT_BUCKET"]}{os.environ["VIDEO_OUTPUT_PREFIX"]}'
-                    
-        print('Destination: ' + destination_s3)
 
         for output_group in job_settings['OutputGroups']:
             output_group_type = output_group['OutputGroupSettings']['Type']

@@ -208,7 +208,17 @@ The video output formats and resolutions are defined within the Lambda function 
 
 You can add watermarking to the MediaConvert job by modifying the `job.json` file used in the Lambda function. See the [Adding Water Marking to job.json](./docs/README-Watermarking.md) documentation for details on how to implement watermarking in your MediaConvert jobs.
 
-## Captions
+#### Custom Job Settings
+
+In addition to modifying the `job.json` file for the function, you can manage multiple job settings, placing one in the root of various directories in your `VideoSourceBucket` upload path. This allows you to determine what job setting you wish to use by uploading a video to a directory that contains a particular job setting. Modify your Lambda function to look for a `job-settings.json` file in the directory the video event came from. (If one doesn't exist you can always fall back on the default `job.json`).
+
+For more information on this solution see [AWS documentation for Job Settings](https://docs.aws.amazon.com/solutions/latest/video-on-demand-on-aws-foundation/job-settings-file.html).
+
+For even more, see [AWS documentation for Job Settings file examples](https://docs.aws.amazon.com/mediaconvert/latest/ug/example-job-settings.html).
+
+You can also create a job through the console and export the settings file.
+
+#### Captions
 
 MediaConvert does accept caption files as part of the job submission. You will need to ensure the caption file is available prior to submitting the job to MediaConvert. This can be baked into a preprocess. For example, the S3 triggers only on `.mp4` file uploads (you could include additional video formats as well). You could have a previous process generate a transcript and place the caption file in the same `VideoSourceBucket` prior to uploading the video file. The Lambda function can then receive the event for the video file and check to see if there is a companion transcript. If there is then submit that with the job.
 
