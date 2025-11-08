@@ -64,7 +64,6 @@ Metadata:
         Parameters:
           - LogRetentionInDaysForPROD
           - LogRetentionInDaysForDEVTEST
-          - VideoSourcePrefix
 
 # =============================================================================
 # PARAMETERS
@@ -229,14 +228,6 @@ Parameters:
     Description: "How long should CloudWatch logs be kept in a DEV or TEST environment?"
     Default: 7
     AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
-
-  VideoSourcePrefix:
-    Type: String
-    Description: "S3 Prefix (folder) within the source bucket where videos to be converted will be uploaded to trigger processing."
-    Default: "/uploads/"
-    AllowedPattern: "^\\/([a-zA-Z0-9-_]+[\\/])+$|^\\/$"
-    MaxLength: 128
-    ConstraintDescription: "0 to 128 characters. Alphanumeric, hyphens, underscores, periods, and slashes. Must be a single slash or start and end with a slash."
 
 # =============================================================================
 # CONDITIONS
@@ -444,7 +435,7 @@ Resources:
             Effect: Allow
             Resource:
             - !Sub "arn:aws:s3:::${VideoSourceBucket}"
-            - !Sub "arn:aws:s3:::${VideoSourceBucket}${VideoSourcePrefix}*"
+            - !Sub "arn:aws:s3:::${VideoSourceBucket}/uploads/*"
 
           - Sid: AccessToS3DestinationBucket
             Action:
@@ -490,27 +481,18 @@ Resources:
           - Id: "ExpireObjects"
             Status: "Enabled" # Enable only if you are going to use this LifecycleConfiguration
             Prefix: "uploads"
-            # Prefix: !Sub 
-            #   - "${path}"
-            #   - path: !Select [1, !Split ["/", !Join ["/", !Split ["/", !Ref VideoSourcePrefix]]]] # this will limit this policy to VideoSourceBucket/VideoSourcePrefix/*
             AbortIncompleteMultipartUpload:
               DaysAfterInitiation: 1
             NoncurrentVersionExpirationInDays: 7
           - Id: "MoveCurrentVersionToGlacier"
             Status: "Enabled" # Enable only if you are going to use this LifecycleConfiguration
             Prefix: "uploads"
-            # Prefix: !Sub 
-            #   - "${path}"
-            #   - path: !Select [1, !Split ["/", !Join ["/", !Split ["/", !Ref VideoSourcePrefix]]]] # this will limit this policy to VideoSourceBucket/VideoSourcePrefix/*
             Transitions:
               - TransitionInDays: 30
                 StorageClass: GLACIER
           - Id: "DeleteOldUploads"
             Status: "Disabled" # Enable only if you are going to use this LifecycleConfiguration
             Prefix: "uploads"
-            # Prefix: !Sub 
-            #   - "${path}"
-            #   - path: !Select [1, !Split ["/", !Join ["/", !Split ["/", !Ref VideoSourcePrefix]]]] # this will limit this policy to VideoSourceBucket/VideoSourcePrefix/*
             ExpirationInDays: 365
       NotificationConfiguration:
         LambdaConfigurations:
@@ -551,7 +533,7 @@ Resources:
             Action:
             - s3:PutObject
             Resource:
-              - !Sub "arn:aws:s3:::${VideoSourceBucket}${VideoSourcePrefix}*"
+              - !Sub "arn:aws:s3:::${VideoSourceBucket}/uploads/*"
             Condition:
               StringEquals:
                 "aws:SourceAccount": !Sub "${AWS::AccountId}"
