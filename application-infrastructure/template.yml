@@ -206,7 +206,7 @@ Parameters:
     Default: 1024 # 1 GB
     MinValue: 128
     MaxValue: 10240 # 10 GB
-    ConstraintDescription: "Must be between 128 and 1024 MB (10 GB). 1024 MB is a good starting point for most API web service applications."
+    ConstraintDescription: "Must be between 128 and 10240 MB (10 GB). 1024 MB is a good starting point for most API web service applications."
 
   FunctionArchitecture:
     Type: String
