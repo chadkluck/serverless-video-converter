@@ -383,9 +383,10 @@
             "DropFrameTimecode": "ENABLED",
             "RespondToAfd": "NONE",
             "ColorMetadata": "INSERT"
-          }
+          },
+          "NameModifier": "_720"
         },
-                {
+        {
           "ContainerSettings": {
             "Container": "RAW"
           },
@@ -409,7 +410,8 @@
             "DropFrameTimecode": "ENABLED",
             "RespondToAfd": "NONE",
             "ColorMetadata": "INSERT"
-          }
+          },
+          "NameModifier": "_1080"
         }
       ],
       "OutputGroupSettings": {
