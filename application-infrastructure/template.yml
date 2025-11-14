@@ -456,11 +456,8 @@ Resources:
             - Fn::ForEach::S3DestinationBuckets:
               - OutputBucketName
               - !Ref VideoOutputBucket
-              - !Sub "arn:aws:s3:::${OutputBucketName}"
-            - Fn::ForEach::S3DestinationBucketPrefix:
-              - OutputBucketName
-              - !Ref VideoOutputBucket
-              - !Sub "arn:aws:s3:::${OutputBucketName}${VideoOutputPrefix}*"
+              - - !Sub "arn:aws:s3:::${OutputBucketName}"
+                - !Sub "arn:aws:s3:::${OutputBucketName}${VideoOutputPrefix}*"
 
   # ---------------------------------------------------------------------------
   # Source Bucket
