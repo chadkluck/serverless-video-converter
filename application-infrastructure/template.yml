@@ -14,7 +14,9 @@
 # - atlantis/v2/pipeline/template.yml
 
 AWSTemplateFormatVersion: "2010-09-09"
-Transform:  AWS::Serverless-2016-10-31
+Transform:
+  - AWS::Serverless-2016-10-31
+  - AWS::LanguageExtensions
 Description: "AWS Lambda (Python) function triggered when a new video is uploaded to S3. The Lambda function then submits a job to AWS Elemental MediaConvert"
 
 # =============================================================================
@@ -168,9 +170,9 @@ Parameters:
     ConstraintDescription: "A valid email address"
 
   VideoOutputBucket:
-    Type: String
+    Type: CommaDelimitedList
     Description: "S3 Bucket name(s) where converted videos will be stored. Multiple buckets can be specified as comma-separated values."
-    AllowedPattern: "^[a-z0-9][a-z0-9.\\-]{1,61}[a-z0-9](,[a-z0-9][a-z0-9.\\-]{1,61}[a-z0-9])*$"
+    AllowedPattern: "^[a-z0-9][a-z0-9.\\-]{1,61}[a-z0-9]$"
     MinLength: 3
     ConstraintDescription: "Comma-separated list of S3 bucket names. Each bucket: 3 to 63 characters, lowercase alphanumeric, periods, and dashes. Must start and end with letter or number."
 
@@ -227,6 +229,10 @@ Parameters:
     Description: "How long should CloudWatch logs be kept in a DEV or TEST environment?"
     Default: 7
     AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+
+Mappings:
+  VideoOutputBucketList:
+    Values: !Fn::Split [ ",", !Ref VideoOutputBucket ]
 
 # =============================================================================
 # CONDITIONS
@@ -445,16 +451,18 @@ Resources:
             - !Sub "arn:aws:s3:::${VideoSourceBucket}"
             - !Sub "arn:aws:s3:::${VideoSourceBucket}/uploads/*"
 
-          - Sid: AccessToS3DestinationBucket
-            Action:
-            - s3:PutObject
-            - s3:PutObjectAcl
-            - s3:GetBucketLocation
-            Effect: Allow
-            Resource: "*"
-            Condition:
-              StringLike:
-                "s3:ExistingObjectTag/VideoOutputBucket": !Ref VideoOutputBucket
+          'Fn::ForEach::S3DestinationBuckets':
+            - BucketName
+            - !Ref VideoOutputBucket
+            - Sid: "AccessToS3DestinationBucket"
+              Action:
+              - s3:PutObject
+              - s3:PutObjectAcl
+              - s3:GetBucketLocation
+              Effect: Allow
+              Resource:
+              - !Sub "arn:aws:s3:::${BucketName}"
+              - !Sub "arn:aws:s3:::${BucketName}${VideoOutputPrefix}*"
 
   # ---------------------------------------------------------------------------
   # Source Bucket
