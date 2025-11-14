@@ -453,12 +453,14 @@ Resources:
             - s3:GetBucketLocation
             Effect: Allow
             Resource:
-              'Fn::ForEach::S3DestinationBuckets':
-                - BucketName
-                - !Ref VideoOutputBucket
-                - 'S3DestinationBuckets${BucketName}':
-                  - !Sub "arn:aws:s3:::${BucketName}"
-                  - !Sub "arn:aws:s3:::${BucketName}${VideoOutputPrefix}*"
+            - Fn::ForEach::S3DestinationBuckets:
+              - BucketName
+              - !Ref VideoOutputBucket
+              - !Sub "arn:aws:s3:::${BucketName}"
+            - Fn::ForEach::S3DestinationBucketPrefix:
+              - BucketName
+              - !Ref VideoOutputBucket
+              - !Sub "arn:aws:s3:::${BucketName}${VideoOutputPrefix}*"
 
   # ---------------------------------------------------------------------------
   # Source Bucket
