@@ -624,14 +624,14 @@ Outputs:
 'Fn::ForEach::DestinationBucketLinks':
   - BucketName
   - !Ref VideoOutputBucket
-  - 'VideoOutputBucketLink${BucketName}':
+  - 'VideoOutputBucketLink':
       Description: !Sub "S3 Destination Bucket: ${BucketName}"
       Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/s3/buckets/${BucketName}?region=${AWS::Region}&tab=objects"
 
 'Fn::ForEach::DestinationBucketNames':
   - BucketName
   - !Ref VideoOutputBucket
-  - 'DVideoOutputBucketName${BucketName}':
+  - 'VideoOutputBucketName':
       Description: !Sub "S3 Destination Bucket: ${BucketName}"
       Value: !Sub "${BucketName}"
 
