@@ -621,19 +621,9 @@ Outputs:
     Description: "S3 Source Bucket ARN"
     Value: !Sub "arn:aws:s3:::${VideoSourceBucket}"
 
-'Fn::ForEach::DestinationBucketLinks':
-  - BucketName
-  - !Ref VideoOutputBucket
-  - 'VideoOutputBucketLink':
-      Description: !Sub "S3 Destination Bucket: ${BucketName}"
-      Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/s3/buckets/${BucketName}?region=${AWS::Region}&tab=objects"
-
-'Fn::ForEach::DestinationBucketNames':
-  - BucketName
-  - !Ref VideoOutputBucket
-  - 'VideoOutputBucketName':
-      Description: !Sub "S3 Destination Bucket: ${BucketName}"
-      Value: !Sub "${BucketName}"
+  VideoOutputBucket:
+    Description: "S3 Destination Bucket(s)"
+    Value: !Join [", ", !Ref VideoOutputBucket]
 
 VideoOutputPrefix:
   Description: "S3 Destination Bucket Prefix"
