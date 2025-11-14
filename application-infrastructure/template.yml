@@ -625,6 +625,6 @@ Outputs:
     Description: "S3 Destination Bucket(s)"
     Value: !Join [", ", !Ref VideoOutputBucket]
 
-VideoOutputPrefix:
-  Description: "S3 Destination Bucket Prefix"
-  Value: !Ref VideoOutputPrefix
+  VideoOutputPrefix:
+    Description: "S3 Destination Bucket Prefix"
+    Value: !Ref VideoOutputPrefix
