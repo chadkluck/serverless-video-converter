@@ -370,6 +370,12 @@ Resources:
             - - !If [UseS3BucketNameOrgPrefix, !Sub "arn:aws:s3:::${S3BucketNameOrgPrefix}-${Prefix}", !Sub "arn:aws:s3:::${Prefix}" ]
               - !Sub "${ProjectId}-${StageId}-${AWS::Region}-${AWS::AccountId}-src/uploads/*"
 
+          - Sid: S3ReadBucketTags
+            Action:
+            - s3:GetBucketTagging
+            Effect: Allow
+            Resource: "arn:aws:s3:::*"
+
   # -- Lambda Function Error Alarm --
 
   SubmitJobFunctionErrorsAlarm:

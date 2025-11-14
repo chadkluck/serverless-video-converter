@@ -55,7 +55,7 @@ def handler(event, context):
     
     print('Processing New Object: ' + source_s3)
 
-    # Get S3 tags to determine output bucket
+    # Get S3 tags from object to determine output bucket
     s3_client = boto3.client('s3', region_name=AWS_REGION)
     try:
         tags_response = s3_client.get_object_tagging(Bucket=source_s3_bucket, Key=source_s3_key)
@@ -69,6 +69,13 @@ def handler(event, context):
                 raise ValueError(f"Tagged VideoOutputBucket '{tagged_bucket}' not in allowed buckets: {VIDEO_OUTPUT_BUCKET} - Please check for typos or add the bucket to the VideoOutputBucket parameter")
         else:
             output_bucket = VIDEO_OUTPUT_BUCKET[0]
+
+        # Check the output bucket tags to ensure AllowElementalMediaConvertOutput=true
+        bucket_tags_response = s3_client.get_bucket_tagging(Bucket=output_bucket)
+        bucket_tags = {tag['Key']: tag['Value'] for tag in bucket_tags_response.get('TagSet', [])}
+        if 'AllowElementalMediaConvertOutput' not in bucket_tags:
+            raise ValueError(f"Output bucket '{output_bucket}' does not have the required tag 'AllowElementalMediaConvertOutput' - Please add the tag to the bucket or remove the bucket from the VideoOutputBucket parameter")
+        
     except Exception as e:
         if 'NoSuchTagSet' in str(e):
             output_bucket = VIDEO_OUTPUT_BUCKET[0]
