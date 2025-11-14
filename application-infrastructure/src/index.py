@@ -4,8 +4,7 @@ from urllib.parse import urlparse
 import uuid
 import boto3
 
-# VIDEO_OUTPUT_BUCKET = [bucket.strip() for bucket in os.environ["VIDEO_OUTPUT_BUCKET"].split(',')]
-VIDEO_OUTPUT_BUCKET = os.environ["VIDEO_OUTPUT_BUCKET"]
+VIDEO_OUTPUT_BUCKET = [bucket.strip() for bucket in os.environ["VIDEO_OUTPUT_BUCKET"].split(',')]
 VIDEO_OUTPUT_PREFIX = os.environ["VIDEO_OUTPUT_PREFIX"]
 AWS_LAMBDA_FUNCTION_NAME = os.environ["AWS_LAMBDA_FUNCTION_NAME"]
 AWS_REGION = os.environ["AWS_DEFAULT_REGION"]
@@ -67,7 +66,7 @@ def handler(event, context):
             if tagged_bucket in VIDEO_OUTPUT_BUCKET:
                 output_bucket = tagged_bucket
             else:
-                raise ValueError(f"Tagged VideoOutputBucket '{tagged_bucket}' not in allowed buckets: {VIDEO_OUTPUT_BUCKET}")
+                raise ValueError(f"Tagged VideoOutputBucket '{tagged_bucket}' not in allowed buckets: {VIDEO_OUTPUT_BUCKET} - Please check for typos or add the bucket to the VideoOutputBucket parameter")
         else:
             output_bucket = VIDEO_OUTPUT_BUCKET[0]
     except Exception as e:

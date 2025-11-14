@@ -172,8 +172,8 @@ Parameters:
   VideoOutputBucket:
     Type: CommaDelimitedList
     Description: "S3 Bucket name(s) where converted videos will be stored. Multiple buckets can be specified as comma-separated values."
-    AllowedPattern: "^[a-z0-9][a-z0-9.\\-]{1,61}[a-z0-9]$"
-    ConstraintDescription: "Comma-separated list of S3 bucket names. Each bucket: 3 to 63 characters, lowercase alphanumeric, periods, and dashes. Must start and end with letter or number."
+    # AllowedPattern: "^[a-z0-9][a-z0-9.\\-]{1,61}[a-z0-9]$"
+    # ConstraintDescription: "Comma-separated list of S3 bucket names. Each bucket: 3 to 63 characters, lowercase alphanumeric, periods, and dashes. Must start and end with letter or number."
 
   VideoOutputPrefix:
     Type: String
@@ -315,7 +315,7 @@ Resources:
           LAMBDA_TIMEOUT_IN_SEC: !Ref FunctionTimeOutInSeconds # so we can calculate any external connection timeout in our code
 
           MEDIA_CONVERT_ROLE: !Sub "arn:aws:iam::${AWS::AccountId}:role${RolePath}${Prefix}-${ProjectId}-${StageId}-MediaConvertRole" # Prevent Circular Reference
-          VIDEO_OUTPUT_BUCKET: !Ref VideoOutputBucket # S3 Bucket to store converted videos
+          VIDEO_OUTPUT_BUCKET: !Join [",", !Ref VideoOutputBucket] # S3 Bucket to store converted videos
           VIDEO_OUTPUT_PREFIX: !Ref VideoOutputPrefix # S3 Prefix (folder) within the output bucket where converted videos will be stored
 
   # -- LambdaFunction Execution Role --
