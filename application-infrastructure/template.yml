@@ -454,13 +454,13 @@ Resources:
             Effect: Allow
             Resource:
             - Fn::ForEach::S3DestinationBuckets:
-              - BucketName
+              - OutputBucketName
               - !Ref VideoOutputBucket
-              - !Sub "arn:aws:s3:::${BucketName}"
+              - !Sub "arn:aws:s3:::${OutputBucketName}"
             - Fn::ForEach::S3DestinationBucketPrefix:
-              - BucketName
+              - OutputBucketName
               - !Ref VideoOutputBucket
-              - !Sub "arn:aws:s3:::${BucketName}${VideoOutputPrefix}*"
+              - !Sub "arn:aws:s3:::${OutputBucketName}${VideoOutputPrefix}*"
 
   # ---------------------------------------------------------------------------
   # Source Bucket
