@@ -621,10 +621,10 @@ Outputs:
     Description: "S3 Source Bucket ARN"
     Value: !Sub "arn:aws:s3:::${VideoSourceBucket}"
 
-  VideoOutputBucket:
+  VideoOutputBucketName:
     Description: "S3 Destination Bucket(s)"
     Value: !Join [", ", !Ref VideoOutputBucket]
 
-  VideoOutputPrefix:
+  VideoOutputPrefixPath:
     Description: "S3 Destination Bucket Prefix"
     Value: !Ref VideoOutputPrefix
