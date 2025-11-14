@@ -446,18 +446,19 @@ Resources:
             - !Sub "arn:aws:s3:::${VideoSourceBucket}"
             - !Sub "arn:aws:s3:::${VideoSourceBucket}/uploads/*"
 
-          'Fn::ForEach::S3DestinationBuckets':
-            - BucketName
-            - !Ref VideoOutputBucket
-            - Sid: "AccessToS3DestinationBucket"
-              Action:
-              - s3:PutObject
-              - s3:PutObjectAcl
-              - s3:GetBucketLocation
-              Effect: Allow
-              Resource:
-              - !Sub "arn:aws:s3:::${BucketName}"
-              - !Sub "arn:aws:s3:::${BucketName}${VideoOutputPrefix}*"
+          - Sid: "AccessToS3DestinationBucket"
+            Action:
+            - s3:PutObject
+            - s3:PutObjectAcl
+            - s3:GetBucketLocation
+            Effect: Allow
+            Resource:
+              'Fn::ForEach::S3DestinationBuckets':
+                - BucketName
+                - !Ref VideoOutputBucket
+                - 'S3DestinationBuckets${BucketName}':
+                  - !Sub "arn:aws:s3:::${BucketName}"
+                  - !Sub "arn:aws:s3:::${BucketName}${VideoOutputPrefix}*"
 
   # ---------------------------------------------------------------------------
   # Source Bucket
@@ -621,9 +622,9 @@ Outputs:
     Description: "S3 Source Bucket ARN"
     Value: !Sub "arn:aws:s3:::${VideoSourceBucket}"
 
-  VideoOutputBucketName:
-    Description: "S3 Destination Bucket(s)"
-    Value: !Join [", ", !Ref VideoOutputBucket]
+  # VideoOutputBucketName:
+  #   Description: "S3 Destination Bucket(s)"
+  #   Value: !Join [", ", !Ref VideoOutputBucket]
 
   VideoOutputPrefixPath:
     Description: "S3 Destination Bucket Prefix"
