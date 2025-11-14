@@ -452,12 +452,11 @@ Resources:
             - s3:PutObjectAcl
             - s3:GetBucketLocation
             Effect: Allow
-            Resource:
-            - Fn::ForEach::S3DestinationBuckets:
-              - OutputBucketName
-              - !Ref VideoOutputBucket
-              - - !Sub "arn:aws:s3:::${OutputBucketName}"
-                - !Sub "arn:aws:s3:::${OutputBucketName}${VideoOutputPrefix}*"
+            Resource: "*"
+            Condition:
+              # Bucket has a Resource Tag with key "AllowElementalMediaConvertOutput" and value "true"
+              StringEquals:
+                "s3:ResourceTag/AllowElementalMediaConvertOutput": "true"
 
   # ---------------------------------------------------------------------------
   # Source Bucket
@@ -621,9 +620,9 @@ Outputs:
     Description: "S3 Source Bucket ARN"
     Value: !Sub "arn:aws:s3:::${VideoSourceBucket}"
 
-  # VideoOutputBucketName:
-  #   Description: "S3 Destination Bucket(s)"
-  #   Value: !Join [", ", !Ref VideoOutputBucket]
+  VideoOutputBucketName:
+    Description: "S3 Destination Bucket(s)"
+    Value: !Join [", ", !Ref VideoOutputBucket]
 
   VideoOutputPrefixPath:
     Description: "S3 Destination Bucket Prefix"
