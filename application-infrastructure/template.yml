@@ -367,7 +367,7 @@ Resources:
             Effect: Allow
             Resource: !Join # Prevent Circular Reference
             - "-"
-            - - !If [UseS3BucketNameOrgPrefix, !Sub "${S3BucketNameOrgPrefix}-${Prefix}", !Sub "${Prefix}" ]
+            - - !If [UseS3BucketNameOrgPrefix, !Sub "arn:aws:s3:::${S3BucketNameOrgPrefix}-${Prefix}", !Sub "arn:aws:s3:::${Prefix}" ]
               - !Sub "${ProjectId}-${StageId}-${AWS::Region}-${AWS::AccountId}-src/uploads/*"
 
   # -- Lambda Function Error Alarm --
