@@ -76,17 +76,19 @@ Deploy using the Atlantis CLI scripts from your DevOps SAM Config repo:
 ```bash
 # Create the storage stack that will serve as the VideoOutputBucket
 ./cli/config.py storage PREFIX MY_STATIC_ASSETS
-# choose the template-storage-s3-cloudfront.yml template when asked
-# You will need the BucketName when setting up the application later
-# You will also need the OriginBucketDomainForCloudFront when setting up CloudFront
+# CHOOSE TEMPLATE: template-storage-s3-oac-for-cloudfront.yml
+# ADD TAG: AllowElementalMediaConvertOutput=true
+# FROM THE OUTPUTS AFTER DEPLOY YOU WILL NEED FOR LATER:
+# - BucketName
+# - OriginBucketDomainForCloudFront
 
-# Create the repo and seed it from the @chadkluck/serverless-video-converter
+# Create the Serverless Video Converter repo and seed it from the @chadkluck/serverless-video-converter
 ./cli/create_repo.py YOUR_GITHUB/YOUR_REPO_NAME --provider github --source https://github.com/chadkluck/serverless-video-converter
 
 # OR, if using CodeCommit:
 ./cli/create_repo.py YOUR_REPO_NAME --provider codecommit --source https://github.com/chadkluck/serverless-video-converter
 
-# Clone the repository and perform your first deployment AS-IS just to make sure it works
+# Clone your repository and perform your first deployment AS-IS just to make sure it works
 cd .. # Be sure to do this OUTSIDE of the DevOps SAM Config repo! Either from same command line or in a separate window
 git clone YOUR_REPO_URL
 cd YOUR_REPO_NAME
@@ -106,7 +108,7 @@ git push
 cd ../YOUR_DEVOPS_SAM_CONFIG_REPO
 ./cli/config.py pipeline PREFIX YOUR_PROJECT_NAME test
 # choose the template-pipeline.yml template when asked
-# Follow the prompts (for S3StaticBucket you will use the bucket name of your Output bucket)
+# Follow the prompts (for S3StaticHostBucket you will use the bucket name of your Output bucket)
 
 # After it is created you will have a chance to deploy right away or do it later using the deploy.py command.
 # Once deployed, test it out with a SHORT 30 to 60 second video:
@@ -241,9 +243,9 @@ You can specify an output bucket on a per-video basis by using S3 object tags. T
 aws s3 cp large-video-file.mp4 s3://VIDEO_SOURCE_BUCKET/uploads/ --tagging "VideoOutputBucket=bucketname"
 ```
 
-> Note: Before the Lambda function will recognize a `VideoOutputBucket` in a tag, it MUST be passed as a value to the `VideoOutputBucket` parameter when the application is deployed. 
+> Note: Before the Lambda function will recognize a `VideoOutputBucket` in a tag, it MUST be passed as a value to the `VideoOutputBucket` parameter when the application is deployed. Also, the _OUTPUT BUCKET_ MUST have the tag key `AllowElementalMediaConvertOutput` with value `true`
 
-For this to work, when creating the pipeline, do not set the `S3HostBucket` parameter. Instead, set the `VideoOutputBucket` parameter directly in the `application-infrastructure/template-configuration.json` to a comma separated value listing each of the bucket names.
+For this to work, when creating the pipeline, do not set the `S3StaticHostBucket` parameter. Instead, set the `VideoOutputBucket` parameter directly in the `application-infrastructure/template-configuration.json` to a comma separated value listing each of the bucket names.
 
 ```yaml
 {
@@ -254,25 +256,7 @@ For this to work, when creating the pipeline, do not set the `S3HostBucket` para
 }
 ```
 
-While `VideoOutputBucket` is a comma separated list, `VideoOutputPrefix` is not. You will either need to modify the code or deploy separate instances in order to accommodate different output paths.
-
-#### Watermarking
-
-You can add watermarking to the MediaConvert job by modifying the `job.json` file used in the Lambda function. See the [Adding Water Marking to job.json](./docs/README-Watermarking.md) documentation for details on how to implement watermarking in your MediaConvert jobs.
-
-#### Custom Job Settings
-
-In addition to modifying the `job.json` file for the function, you can manage multiple job settings, placing one in the root of various directories in your `VideoSourceBucket` upload path. This allows you to determine what job setting you wish to use by uploading a video to a directory that contains a particular job setting. Modify your Lambda function to look for a `job-settings.json` file in the directory the video event came from. (If one doesn't exist you can always fall back on the default `job.json`).
-
-For more information on this solution see [AWS documentation for Job Settings](https://docs.aws.amazon.com/solutions/latest/video-on-demand-on-aws-foundation/job-settings-file.html).
-
-For even more, see [AWS documentation for Job Settings file examples](https://docs.aws.amazon.com/mediaconvert/latest/ug/example-job-settings.html).
-
-You can also create a job through the console and export the settings file.
-
-#### Captions
-
-MediaConvert does accept caption files as part of the job submission. You will need to ensure the caption file is available prior to submitting the job to MediaConvert. This can be baked into a preprocess. For example, the S3 triggers only on `.mp4` file uploads (you could include additional video formats as well). You could have a previous process generate a transcript and place the caption file in the same `VideoSourceBucket` prior to uploading the video file. The Lambda function can then receive the event for the video file and check to see if there is a companion transcript. If there is then submit that with the job.
+While `VideoOutputBucket` is a comma separated list, `VideoOutputPrefix` is not. You will either need to modify the code or deploy separate instances in order to accommodate different output paths. When using the Atlantis developer platform for S3 buckets fronted by the CloudFront CDN, `$STAGE_ID$/public` is the standard prefix path. Changing this can cause issues when used with other Atlantis projects. You can change `videos` to whatever you want.
 
 ## Extending
 
@@ -284,6 +268,7 @@ This application can be extended in many ways by making it part of a chain of mi
 
 When extending, it is important to maintain separation of concerns. Think of separate micro-services in a chain, each performing ONE duty. Use event driven architecture and step functions to orchestrate processing. Implement automation and checks such as not submitting a video with no audio, or only orchestral music, to Transcribe. Ensure there are places where a human can verify, intervene, or approve (step functions are great for this) to prevent unnecessary processing.
 
+[Ideas](./docs/ideas-for-extending)
 
 ## Author
 
