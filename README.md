@@ -13,15 +13,15 @@ This application is useful for scenarios such as:
 
 > NOTE! While this is serverless, meaning you only get charged for what you use, not for any idle time, you ARE charged for what you use. My personal experience in converting a 30 min video and 10 3 min videos (approx 60 min total) from 4K to 4K Optimized, 1080, 720, and SD and Stream chunks in `us-east-2` has cost about USD$100.
 
-So, while free to set up, and you don't get charge for having it sit there, there is a cost if you USE it. If you are just experimenting I suggest having a 30 second to 1 minute video ready for testing and only upload large videos when you are in production and serious about hosting video content.
+So, while free to set up, and you don't get charged for having it sit there, there is a cost if you USE it. If you are just experimenting I suggest having a 30 to 60 second video ready for testing and only upload large videos when you are in production and serious about hosting video content.
 
 ## Demo
 
-This application stack is used in conjunction with S3 fronted by CloudFront and a React-based site hosted on AWS Amplify on my personal hobby site [Doghouse Lights](https://doghouselights.com) under the Videos section. This application processes the videos I upload to then be streamed in various formats and sizes depending on device or network connection.
+This application stack is used in conjunction with S3 fronted by CloudFront and a React-based site hosted on AWS Amplify on my personal hobby site [Doghouse Lights](https://doghouselights.com/videos) under the Videos section. This application processes the videos I upload to then be streamed in various formats and sizes depending on device or network connection.
 
 ## Work Flow
 
-1. User (or process) uploads a video file to S3 bucket (`VideoSourceBucket`)
+1. User (or a process) uploads a video file to S3 bucket (`VideoSourceBucket`)
 2. S3 triggers Lambda function (`SubmitJobFunction`)
 3. Lambda function submits a job to AWS Elemental MediaConvert to transcode the video into
    multiple formats and resolutions. The job contains information on where to put the output and the IAM Role to use.
@@ -35,21 +35,19 @@ flowchart TD
     D -.->|"4. Save transcoded videos"| E[VideoOutputBucket]
 ```
 
-To maintain a micro-service, this stack ONLY manages processing of the video. It is part of a process chain.
+To maintain a micro-service, this stack ONLY manages processing of the video. It can be part of an event-driven process pipeline.
 
 You will still need a mechanism to upload to the `VideoSourceBucket` (CLI or web based site) and an `VideoOutputBucket` that can be fronted by CloudFront. (Additional templates are provided by 63Klabs to maintain the S3 fronted by CloudFront stacks)
 
 ## Usage
 
-This uses the [63Klabs Atlantis framework](https://github.com/63Klabs/atlantis-cfn-configuration-repo-for-serverless-deployments) to manage the pipeline and storage stacks.
+This uses the [63Klabs Atlantis developer platform](https://github.com/63Klabs/atlantis-cfn-configuration-repo-for-serverless-deployments) to manage the pipeline and storage stacks.
 
 This is one part of a multi-stack deployment. Think of it as part of a chain of events. It could even be extended into a step function that not only sends jobs to [MediaConvert](https://aws.amazon.com/mediaconvert/), but also [Amazon Rekognition](https://aws.amazon.com/rekognition/) and [Amazon Transcribe](https://aws.amazon.com/transcribe/).
 
-MediaConvert could also be removed from this stack and replaced with an image resizing/watermarking function. The event-driven nature of S3 could be retained.
-
 ### Uploads
 
-The video object can be placed in the VideoSourceBucket from the cli:
+The video object can be placed in the `VideoSourceBucket` from the cli:
 
 ```bash
 aws s3 cp large-video-file.mp4 s3://VIDEO_SOURCE_BUCKET/uploads/
@@ -65,9 +63,9 @@ The output bucket must be configured to allow AWS Elemental MediaConvert to writ
 
 ## Deployment
 
-This stack is designed to be deployed using the [63Klabs Atlantis framework](https://github.com/63Klabs/atlantis-cfn-configuration-repo-for-serverless-deployments). 
+This stack is designed to be deployed using the [63Klabs Atlantis developer platform](https://github.com/63Klabs/atlantis-cfn-configuration-repo-for-serverless-deployments). 
 
-Like any other project, you can skip the framework and go at it on your own by modifying the code and templates to fit your needs. However, if you are managing many projects manually (especially on your own or part of a small team), the Atlantis framework is highly recommended as it implements Platform Engineering and AWS best practices. Plus it utilizes AWS native resources including SAM deployments and CloudFormation without the need of proprietary DevOps tools. Everything is API, CloudFormation template, and SAM CLI based. There are a lot of logging, metrics, and security features already baked into the templates so you don't need to start from scratch.
+Like any other project, you can skip the Atlantis platform and go at it on your own by modifying the code and templates to fit your needs. However, if you are managing many projects manually (especially on your own or part of a small team), the Atlantis platform is highly recommended as it implements Platform Engineering and AWS best practices. Plus it utilizes AWS native resources including SAM deployments and CloudFormation without the need of proprietary DevOps tools. Everything is API, CloudFormation template, and SAM CLI based. There are a lot of logging, metrics, and security features already baked into the templates so you don't need to start from scratch.
 
 ### Deployment Using 63Klabs Atlantis
 
@@ -82,6 +80,9 @@ Deploy using the Atlantis CLI scripts from your DevOps SAM Config repo:
 # - BucketName
 # - OriginBucketDomainForCloudFront
 
+# Don't forget to deploy if you skipped deployment during config
+./cli/deploy.py storage PREFIX MY_STATIC_ASSETS
+
 # Create the Serverless Video Converter repo and seed it from the @chadkluck/serverless-video-converter
 ./cli/create_repo.py YOUR_GITHUB/YOUR_REPO_NAME --provider github --source https://github.com/chadkluck/serverless-video-converter
 
@@ -95,8 +96,8 @@ cd YOUR_REPO_NAME
 
 # checkout dev
 git checkout dev
-# inspect ./application-infrastructure/template-configuration.json and ensure the VideoOutputPrefix matches the output bucket prefix (Leave VideoOutputBucket as that will be brought in from the pipeline)
-# If you make any changes, ensure you commit and push the changes back to dev (however, try to deploy as-is to make troubleshooting easier)
+# inspect ./application-infrastructure/template-configuration.json and ensure the VideoOutputPrefix matches the output bucket prefix path (Leave VideoOutputBucket as that will be brought in from the pipeline)
+# If you make any changes, ensure you commit and push the changes back to dev (however, try a first-time deploy as-is to make troubleshooting easier)
 
 # You must merge dev into test before creating the pipeline (so it has something to deploy)
 git checkout test
@@ -110,6 +111,9 @@ cd ../YOUR_DEVOPS_SAM_CONFIG_REPO
 # choose the template-pipeline.yml template when asked
 # Follow the prompts (for S3StaticHostBucket you will use the bucket name of your Output bucket)
 
+# Don't forget to deploy if you skipped deployment during config
+./cli/deploy.py pipeline PREFIX YOUR_PROJECT_NAME test
+
 # After it is created you will have a chance to deploy right away or do it later using the deploy.py command.
 # Once deployed, test it out with a SHORT 30 to 60 second video:
 cd ../SOME_DIR_WITH_A_SHORT_30_SEC_VIDEO
@@ -119,13 +123,16 @@ aws s3 cp test-video-file.mp4 s3://VIDEO_SOURCE_BUCKET/uploads/
 # A custom domain record in Route 53 is optional, you can just use the CloudFront distribution url for testing
 cd ../YOUR_DEVOPS_SAM_CONFIG_REPO
 ./cli/config.py network PREFIX YOUR_PROJECT_NAME test
-# choose the template-network-cloudfront-oac.yml template when asked
+# choose the template-network-route53-cloudfront-s3-apigw.yml template when asked
 # Follow the prompts (You will need the OriginBucketDomainForCloudFront from the storage stack)
+
+# Don't forget to deploy if you skipped deployment during config
+./cli/deploy.py network PREFIX YOUR_PROJECT_NAME test
 ```
 
 That's it! Now check the pipeline and CloudFormation progress in the console!
 
-When you are confident with the way the application performs, you can set up a production instance that deploys from the `main` branch. Just replace `test` with `prod` in the above `config.py` commands.
+When you are confident with the way the application performs, you can set up a production instance that deploys from the `main` branch. Just replace `test` with `prod` in the above `config.py` and `deploy.py` commands.
 
 ### Deployment Without 63Klabs Atlantis
 
