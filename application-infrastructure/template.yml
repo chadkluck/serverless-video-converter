@@ -169,11 +169,10 @@ Parameters:
 
   VideoOutputBucket:
     Type: String
-    Description: "S3 Bucket name where converted videos will be stored."
-    AllowedPattern: "^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$"
+    Description: "S3 Bucket name(s) where converted videos will be stored. Multiple buckets can be specified as comma-separated values."
+    AllowedPattern: "^[a-z0-9][a-z0-9.\\-]{1,61}[a-z0-9](,[a-z0-9][a-z0-9.\\-]{1,61}[a-z0-9])*$"
     MinLength: 3
-    MaxLength: 63
-    ConstraintDescription: "3 to 63 characters. Lower case alphanumeric, periods, and dashes. Must start and end with a letter or number."
+    ConstraintDescription: "Comma-separated list of S3 bucket names. Each bucket: 3 to 63 characters, lowercase alphanumeric, periods, and dashes. Must start and end with letter or number."
 
   VideoOutputPrefix:
     Type: String
@@ -362,6 +361,13 @@ Resources:
             Effect: Allow
             Resource: "*"
 
+          - Sid: S3ReadObjectTags
+            Action:
+            - s3:GetObjectTagging
+            Effect: Allow
+            Resource:
+            - !Sub "arn:aws:s3:::${VideoSourceBucket}/uploads/*"
+
   # -- Lambda Function Error Alarm --
 
   SubmitJobFunctionErrorsAlarm:
@@ -443,9 +449,10 @@ Resources:
             - s3:PutObjectAcl
             - s3:GetBucketLocation
             Effect: Allow
-            Resource:
-            - !Sub "arn:aws:s3:::${VideoOutputBucket}"
-            - !Sub "arn:aws:s3:::${VideoOutputBucket}${VideoOutputPrefix}*"
+            Resource: "*"
+            Condition:
+              StringLike:
+                "s3:ExistingObjectTag/VideoOutputBucket": !Ref VideoOutputBucket
 
   # ---------------------------------------------------------------------------
   # Source Bucket

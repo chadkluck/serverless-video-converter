@@ -4,7 +4,7 @@ from urllib.parse import urlparse
 import uuid
 import boto3
 
-VIDEO_OUTPUT_BUCKET = os.environ["VIDEO_OUTPUT_BUCKET"]
+VIDEO_OUTPUT_BUCKET = [bucket.strip() for bucket in os.environ["VIDEO_OUTPUT_BUCKET"].split(',')]
 VIDEO_OUTPUT_PREFIX = os.environ["VIDEO_OUTPUT_PREFIX"]
 AWS_LAMBDA_FUNCTION_NAME = os.environ["AWS_LAMBDA_FUNCTION_NAME"]
 AWS_REGION = os.environ["AWS_DEFAULT_REGION"]
@@ -55,9 +55,28 @@ def handler(event, context):
     
     print('Processing New Object: ' + source_s3)
 
-    output_prefix = normalize_output_prefix(source_s3_key, source_etag)
+    # Get S3 tags to determine output bucket
+    s3_client = boto3.client('s3', region_name=AWS_REGION)
+    try:
+        tags_response = s3_client.get_object_tagging(Bucket=source_s3_bucket, Key=source_s3_key)
+        tags = {tag['Key']: tag['Value'] for tag in tags_response.get('TagSet', [])}
+        
+        if 'VideoOutputBucket' in tags:
+            tagged_bucket = tags['VideoOutputBucket']
+            if tagged_bucket in VIDEO_OUTPUT_BUCKET:
+                output_bucket = tagged_bucket
+            else:
+                raise ValueError(f"Tagged VideoOutputBucket '{tagged_bucket}' not in allowed buckets: {VIDEO_OUTPUT_BUCKET}")
+        else:
+            output_bucket = VIDEO_OUTPUT_BUCKET[0]
+    except Exception as e:
+        if 'NoSuchTagSet' in str(e):
+            output_bucket = VIDEO_OUTPUT_BUCKET[0]
+        else:
+            raise
 
-    destination_s3 = f's3://{VIDEO_OUTPUT_BUCKET}{VIDEO_OUTPUT_PREFIX}{output_prefix}'
+    output_prefix = normalize_output_prefix(source_s3_key, source_etag)
+    destination_s3 = f's3://{output_bucket}{VIDEO_OUTPUT_PREFIX}{output_prefix}'
 
     print('Destination: ' + destination_s3)
 
