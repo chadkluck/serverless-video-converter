@@ -457,7 +457,7 @@ Resources:
             Condition:
               # Can only write to buckets with Resource Tag having key "AllowElementalMediaConvertOutput" and value "true"
               StringEquals:
-                "s3:ResourceTag/AllowElementalMediaConvertOutput": "true"
+                "s3:ExistingBucketTag/AllowElementalMediaConvertOutput": "true"
 
   # ---------------------------------------------------------------------------
   # Source Bucket

@@ -268,7 +268,7 @@ This application can be extended in many ways by making it part of a chain of mi
 
 When extending, it is important to maintain separation of concerns. Think of separate micro-services in a chain, each performing ONE duty. Use event driven architecture and step functions to orchestrate processing. Implement automation and checks such as not submitting a video with no audio, or only orchestral music, to Transcribe. Ensure there are places where a human can verify, intervene, or approve (step functions are great for this) to prevent unnecessary processing.
 
-[Ideas](./docs/ideas-for-extending)
+[Ideas](./docs/README-Ideas-For-Extending.md)
 
 ## Author
 
