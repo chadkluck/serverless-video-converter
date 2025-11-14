@@ -4,7 +4,8 @@ from urllib.parse import urlparse
 import uuid
 import boto3
 
-VIDEO_OUTPUT_BUCKET = [bucket.strip() for bucket in os.environ["VIDEO_OUTPUT_BUCKET"].split(',')]
+# VIDEO_OUTPUT_BUCKET = [bucket.strip() for bucket in os.environ["VIDEO_OUTPUT_BUCKET"].split(',')]
+VIDEO_OUTPUT_BUCKET = os.environ["VIDEO_OUTPUT_BUCKET"]
 VIDEO_OUTPUT_PREFIX = os.environ["VIDEO_OUTPUT_PREFIX"]
 AWS_LAMBDA_FUNCTION_NAME = os.environ["AWS_LAMBDA_FUNCTION_NAME"]
 AWS_REGION = os.environ["AWS_DEFAULT_REGION"]
