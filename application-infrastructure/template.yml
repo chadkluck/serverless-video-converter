@@ -452,7 +452,9 @@ Resources:
             - s3:PutObjectAcl
             - s3:GetBucketLocation
             Effect: Allow
-            Resource: "*"
+            Resource: 
+            - "arn:aws:s3:::*"
+            - !Sub "arn:aws:s3:::*${VideoOutputPrefix}"
             Condition:
               # Bucket has a Resource Tag with key "AllowElementalMediaConvertOutput" and value "true"
               StringEquals:
