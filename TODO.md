@@ -1,7 +1,6 @@
 # TODO
 
-[ ] Separate folders for each video based on name
-[ ] Preserve path from uploads
+[ ] Separate buckets for each video based on object tag
 [ ] Test with Storage and Network stacks, update documentation
 
 [ ] Add SNS topic for job completion notification
