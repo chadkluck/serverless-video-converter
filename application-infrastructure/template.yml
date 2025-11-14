@@ -365,8 +365,10 @@ Resources:
             Action:
             - s3:GetObjectTagging
             Effect: Allow
-            Resource:
-            - !Sub "arn:aws:s3:::${VideoSourceBucket}/uploads/*"
+            Resource: !Join # Prevent Circular Reference
+            - "-"
+            - - !If [UseS3BucketNameOrgPrefix, !Sub "${S3BucketNameOrgPrefix}-${Prefix}", !Sub "${Prefix}" ]
+              - !Sub "${ProjectId}-${StageId}-${AWS::Region}-${AWS::AccountId}-src/uploads/*"
 
   # -- Lambda Function Error Alarm --
 
