@@ -173,7 +173,6 @@ Parameters:
     Type: CommaDelimitedList
     Description: "S3 Bucket name(s) where converted videos will be stored. Multiple buckets can be specified as comma-separated values."
     AllowedPattern: "^[a-z0-9][a-z0-9.\\-]{1,61}[a-z0-9]$"
-    MinLength: 3
     ConstraintDescription: "Comma-separated list of S3 bucket names. Each bucket: 3 to 63 characters, lowercase alphanumeric, periods, and dashes. Must start and end with letter or number."
 
   VideoOutputPrefix:
