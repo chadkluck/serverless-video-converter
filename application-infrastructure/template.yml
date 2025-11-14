@@ -445,19 +445,23 @@ Resources:
             - !Sub "arn:aws:s3:::${VideoSourceBucket}"
             - !Sub "arn:aws:s3:::${VideoSourceBucket}/uploads/*"
 
+          # It is preferred that these be scoped down to just those buckets listed in VideoOutputBucket however,
+          # trying to implement using ForEach, Joins, tags have been unsuccessful.
+          # For now, the Lambda function will have to cancel requests that are not for an approved bucket.
           - Sid: "AccessToS3DestinationBucket"
             Action:
-            - s3:PutObject
-            - s3:PutObjectAcl
             - s3:GetBucketLocation
             Effect: Allow
             Resource: 
             - "arn:aws:s3:::*"
-            - !Sub "arn:aws:s3:::*${VideoOutputPrefix}"
-            Condition:
-              # Can only write to buckets with Resource Tag having key "AllowElementalMediaConvertOutput" and value "true"
-              StringEquals:
-                "s3:ExistingBucketTag/AllowElementalMediaConvertOutput": "true"
+
+          - Sid: "AccessToS3DestinationBucketPut"
+            Action:
+            - s3:PutObject
+            - s3:PutObjectAcl
+            Effect: Allow
+            Resource: 
+            - !Sub "arn:aws:s3:::*${VideoOutputPrefix}*"
 
   # ---------------------------------------------------------------------------
   # Source Bucket
