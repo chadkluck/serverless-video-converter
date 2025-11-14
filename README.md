@@ -77,7 +77,8 @@ Deploy using the Atlantis CLI scripts from your DevOps SAM Config repo:
 # Create the storage stack that will serve as the VideoOutputBucket
 ./cli/config.py storage PREFIX MY_STATIC_ASSETS
 # choose the template-storage-s3-cloudfront.yml template when asked
-# You will need the bucket name and prefix (object path) when setting up the application later
+# You will need the BucketName when setting up the application later
+# You will also need the OriginBucketDomainForCloudFront when setting up CloudFront
 
 # Create the repo and seed it from the @chadkluck/serverless-video-converter
 ./cli/create_repo.py YOUR_GITHUB/YOUR_REPO_NAME --provider github --source https://github.com/chadkluck/serverless-video-converter
@@ -109,10 +110,20 @@ cd ../YOUR_DEVOPS_SAM_CONFIG_REPO
 
 # After it is created you will have a chance to deploy right away or do it later using the deploy.py command.
 # Once deployed, test it out with a SHORT 30 to 60 second video:
+cd ../SOME_DIR_WITH_A_SHORT_30_SEC_VIDEO
 aws s3 cp test-video-file.mp4 s3://VIDEO_SOURCE_BUCKET/uploads/
+
+# Because the bucket uses OAC for security, you will need a cloudfront distribution
+# A custom domain record in Route 53 is optional, you can just use the CloudFront distribution url for testing
+cd ../YOUR_DEVOPS_SAM_CONFIG_REPO
+./cli/config.py network PREFIX YOUR_PROJECT_NAME test
+# choose the template-network-cloudfront-oac.yml template when asked
+# Follow the prompts (You will need the OriginBucketDomainForCloudFront from the storage stack)
 ```
 
 That's it! Now check the pipeline and CloudFormation progress in the console!
+
+When you are confident with the way the application performs, you can set up a production instance that deploys from the `main` branch. Just replace `test` with `prod` in the above `config.py` commands.
 
 ### Deployment Without 63Klabs Atlantis
 
@@ -202,7 +213,48 @@ The other parameters are standard for Atlantis templates so you can gather more 
 
 The video output formats and resolutions are defined within the Lambda function code ([`job.json`](./application-infrastructure/src/job.json)). You can modify the job settings to suit your requirements. Refer to the [AWS Elemental MediaConvert documentation](https://docs.aws.amazon.com/mediaconvert/latest/ug/what-is.html) for details on job settings and configurations.
 
+The following formats are currently in `job.json`:
+
+- HLS
+   - SD
+   - 720p
+   - 1080p
+   - 4K
+- MP4
+   - SD
+   - 720p
+   - 1080p
+   - 4K
+- Thumbnails (.jpg)
+   - 1280 x 720
+   - 1920 x 1080
+
+These outputs expect a 4K video with an aspect of 9:16 uploaded. The script does not check the resolution or aspect of uploaded videos. You will need to add that in if you require it, or prevent videos that do not meet requirements from being uploaded.
+
 > Note: If you do not require 4K video outputs (or SD, etc), then you can remove them from the job specification as it will save you money.
+
+### Handle Multiple VideoOutputBuckets
+
+You can specify an output bucket on a per-video basis by using S3 object tags. The Lambda function can be modified to read the `VideoOutputBucket` tag from the uploaded video and use that as the `VideoOutputBucket` for the MediaConvert job.
+
+```bash
+aws s3 cp large-video-file.mp4 s3://VIDEO_SOURCE_BUCKET/uploads/ --tagging "VideoOutputBucket=bucketname"
+```
+
+> Note: Before the Lambda function will recognize a `VideoOutputBucket` in a tag, it MUST be passed as a value to the `VideoOutputBucket` parameter when the application is deployed. 
+
+For this to work, when creating the pipeline, do not set the `S3HostBucket` parameter. Instead, set the `VideoOutputBucket` parameter directly in the `application-infrastructure/template-configuration.json` to a comma separated value listing each of the bucket names.
+
+```yaml
+{
+  "Parameters": {
+    "VideoOutputBucket": "bucket-name-one,bucket-name-two,bucket-name-3",
+    "VideoOutputPrefix": "/$STAGE_ID$/public/videos/"
+  }
+}
+```
+
+While `VideoOutputBucket` is a comma separated list, `VideoOutputPrefix` is not. You will either need to modify the code or deploy separate instances in order to accommodate different output paths.
 
 #### Watermarking
 
