@@ -589,7 +589,7 @@ Resources:
     Condition: IsProduction  # Only needed in production for gradual deployments
     Properties:
       Action: lambda:InvokeFunction
-      FunctionName: !Sub "${SubmitJobFunction}:live"
+      FunctionName: !Ref SubmitJobFunction.Alias
       Principal: s3.amazonaws.com
       SourceArn: !Join # Avoid circular reference
         - "-"
