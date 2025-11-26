@@ -277,6 +277,12 @@ When extending, it is important to maintain separation of concerns. Think of sep
 
 [Ideas](./docs/README-Ideas-For-Extending.md)
 
+## AI Context
+
+See [AI_CONTEXT.md](AI_CONTEXT.md) for important context and guidelines for AI-generated code in this repository.
+
+The context file is also helpful (and perhaps essential) for HUMANS developing within the application's structured platform as well.
+
 ## Author
 
 This application was developed by Chad Kluck (https://chadkluck.me) and is provided as open source under the MIT License. Feel free to use and modify it as needed.
