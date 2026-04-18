@@ -279,9 +279,17 @@ When extending, it is important to maintain separation of concerns. Think of sep
 
 ## AI Context
 
-See [AI_CONTEXT.md](AI_CONTEXT.md) for important context and guidelines for AI-generated code in this repository.
+See [AGENTS.md](AGENTS.md) for important context and guidelines for AI-generated code in this repository.
 
 The context file is also helpful (and perhaps essential) for HUMANS developing within the application's structured platform as well.
+
+## Security
+
+See [SECURITY.md](./SECURITY.md)
+
+## Change Log
+
+See [CHANGELOG.md](./CHANGELOG.md)
 
 ## Author
 
