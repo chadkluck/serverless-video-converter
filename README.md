@@ -1,7 +1,5 @@
 # Serverless Video Conversion using AWS Elemental MediaConvert
 
-> This is still in beta
-
 AWS Lambda (Python) function triggered when a new video is uploaded to S3. The Lambda function then submits a job to AWS Elemental MediaConvert
 
 This application is useful for scenarios such as:
@@ -9,22 +7,21 @@ This application is useful for scenarios such as:
 - Automated video processing pipelines for media companies
 - Any serverless architecture requiring video transcoding capabilities without managing servers
 
-> For use with template-pipeline.yml which can be deployed using [Atlantis Configuration Repository for Serverless Deployments using AWS SAM](https://github.com/63Klabs/atlantis-cfn-configuration-repo-for-serverless-deployments). The application template was adapted from [Starter 01 - Basic API Gateway and Lambda using Python](https://github.com/63Klabs/atlantis-starter-00-basic-apigw-lambda-nodejs)
+> For use with template-pipeline.yml which can be deployed using [Atlantis DevOps Platform for Serverless Deployments on AWS](https://atlantis.63klabs.net). The application template was adapted from [Starter 01 - Basic API Gateway and Lambda using Python](https://github.com/63Klabs/atlantis-starter-00-basic-apigw-lambda-nodejs)
 
-> NOTE! While this is serverless, meaning you only get charged for what you use, not for any idle time, you ARE charged for what you use. My personal experience in converting a 30 min video and 10 3 min videos (approx 60 min total) from 4K to 4K Optimized, 1080, 720, and SD and Stream chunks in `us-east-2` has cost about USD$100.
+> **NOTE!** While this is serverless, meaning you only get charged for what you use, not for any idle time, you ARE charged for what you use. My personal experience in converting a 30 min video and 10 3 min videos (approx 60 min total) from 4K to 4K Optimized, 1080, 720, and SD and Stream chunks in `us-east-2` has cost about USD$100.
 
 So, while free to set up, and you don't get charged for having it sit there, there is a cost if you USE it. If you are just experimenting I suggest having a 30 to 60 second video ready for testing and only upload large videos when you are in production and serious about hosting video content.
 
 ## Demo
 
-This application stack is used in conjunction with S3 fronted by CloudFront and a React-based site hosted on AWS Amplify on my personal hobby site [Doghouse Lights](https://doghouselights.com/videos) under the Videos section. This application processes the videos I upload to then be streamed in various formats and sizes depending on device or network connection.
+This application stack can be used in conjunction with S3 fronted by CloudFront. An example of a React based site using video.js is at [Doghouse Lights](https://doghouselights.com/videos). The site processes the videos I upload to then be streamed in various formats and sizes depending on device or network connection.
 
 ## Work Flow
 
-1. User (or a process) uploads a video file to S3 bucket (`VideoSourceBucket`)
-2. S3 triggers Lambda function (`SubmitJobFunction`)
-3. Lambda function submits a job to AWS Elemental MediaConvert to transcode the video into
-   multiple formats and resolutions. The job contains information on where to put the output and the IAM Role to use.
+1. User (or a process) uploads a video file to the S3 Video Source Bucket (`VideoSourceBucket`)
+2. S3 triggers a Lambda function (`SubmitJobFunction`)
+3. Lambda function submits a job to [AWS Elemental MediaConvert](https://aws.amazon.com/mediaconvert/) to transcode the video into multiple formats and resolutions. The job contains information on where to output and the IAM Role to use.
 4. Transcoded videos are saved to another S3 bucket (`VideoOutputBucket`)
 
 ```mermaid
@@ -35,25 +32,33 @@ flowchart TD
     D -.->|"4. Save transcoded videos"| E[VideoOutputBucket]
 ```
 
-To maintain a micro-service, this stack ONLY manages processing of the video. It can be part of an event-driven process pipeline.
-
-You will still need a mechanism to upload to the `VideoSourceBucket` (CLI or web based site) and an `VideoOutputBucket` that can be fronted by CloudFront. (Additional templates are provided by 63Klabs to maintain the S3 fronted by CloudFront stacks)
+To maintain a micro-service, this stack ONLY manages processing of the video. It can be part of a larger event-driven workflow.
 
 ## Usage
 
-This uses the [63Klabs Atlantis developer platform](https://github.com/63Klabs/atlantis-cfn-configuration-repo-for-serverless-deployments) to manage the pipeline and storage stacks.
+This application template is Ready-to-Run-and-Deploy using the [63Klabs Atlantis DevOps Platform](https://atlantis.63klabs.net). However, the application template can be easily modified for any deployment method.
 
-This is one part of a multi-stack deployment. Think of it as part of a chain of events. It could even be extended into a step function that not only sends jobs to [MediaConvert](https://aws.amazon.com/mediaconvert/), but also [Amazon Rekognition](https://aws.amazon.com/rekognition/) and [Amazon Transcribe](https://aws.amazon.com/transcribe/).
+The converter application is intended to be one part of a multi-stack deployment or step function that not only receives videos through an uploader, but also uses [Amazon Rekognition](https://aws.amazon.com/rekognition/) and [Amazon Transcribe](https://aws.amazon.com/transcribe/).
 
 ### Uploads
 
 The video object can be placed in the `VideoSourceBucket` from the cli:
 
 ```bash
+# Use the default video output bucket
 aws s3 cp large-video-file.mp4 s3://VIDEO_SOURCE_BUCKET/uploads/
+
+# -- OR --
+
+# Set a different video output during upload using the VideoOutputBucket tag
+aws s3api put-object \
+  --bucket VIDEO_SOURCE_BUCKET \
+  --key uploads/large-video-file.mp4 \
+  --body ./large-video-file.mp4 \
+  --tagging "VideoOutputBucket=VIDEO_OUTPUT_BUCKET"
 ```
 
-Or using a separate process such as an online video upload mechanism or other automated process.
+If you plan on processing a large number of videos you will want to automate this, of course. This application only configures an S3 bucket for uploads and job submissions for output. It does not provide an upload mechanism or an output bucket.
 
 ### Output
 
@@ -63,7 +68,7 @@ The output bucket must be configured to allow AWS Elemental MediaConvert to writ
 
 ## Deployment
 
-This stack is designed to be deployed using the [63Klabs Atlantis developer platform](https://github.com/63Klabs/atlantis-cfn-configuration-repo-for-serverless-deployments). 
+This stack is designed to be deployed using the [63Klabs Atlantis DevOps Platform](https://atlantis.63klabs.net). 
 
 Like any other project, you can skip the Atlantis platform and go at it on your own by modifying the code and templates to fit your needs. However, if you are managing many projects manually (especially on your own or part of a small team), the Atlantis platform is highly recommended as it implements Platform Engineering and AWS best practices. Plus it utilizes AWS native resources including SAM deployments and CloudFormation without the need of proprietary DevOps tools. Everything is API, CloudFormation template, and SAM CLI based. There are a lot of logging, metrics, and security features already baked into the templates so you don't need to start from scratch.
 
@@ -84,29 +89,9 @@ Deploy using the Atlantis CLI scripts from your DevOps SAM Config repo:
 ./cli/deploy.py storage PREFIX MY_STATIC_ASSETS
 
 # Create the Serverless Video Converter repo and seed it from the @chadkluck/serverless-video-converter
-./cli/create_repo.py YOUR_GITHUB/YOUR_REPO_NAME --provider github --source https://github.com/chadkluck/serverless-video-converter
+./cli/create_repo.py YOUR_REPO_NAME --source https://github.com/chadkluck/serverless-video-converter
 
-# OR, if using CodeCommit:
-./cli/create_repo.py YOUR_REPO_NAME --provider codecommit --source https://github.com/chadkluck/serverless-video-converter
-
-# Clone your repository and perform your first deployment AS-IS just to make sure it works
-cd .. # Be sure to do this OUTSIDE of the DevOps SAM Config repo! Either from same command line or in a separate window
-git clone YOUR_REPO_URL
-cd YOUR_REPO_NAME
-
-# checkout dev
-git checkout dev
-# inspect ./application-infrastructure/template-configuration.json and ensure the VideoOutputPrefix matches the output bucket prefix path (Leave VideoOutputBucket as that will be brought in from the pipeline)
-# If you make any changes, ensure you commit and push the changes back to dev (however, try a first-time deploy as-is to make troubleshooting easier)
-
-# You must merge dev into test before creating the pipeline (so it has something to deploy)
-git checkout test
-git merge dev
-git push
-
-# Create the test environment and deploy
-# Go back to your DevOps SAM Config repo
-cd ../YOUR_DEVOPS_SAM_CONFIG_REPO
+# Create the test environment and deploy as-is
 ./cli/config.py pipeline PREFIX YOUR_PROJECT_NAME test
 # choose the template-pipeline.yml template when asked
 # Follow the prompts (for S3StaticHostBucket you will use the bucket name of your Output bucket)
@@ -114,14 +99,12 @@ cd ../YOUR_DEVOPS_SAM_CONFIG_REPO
 # Don't forget to deploy if you skipped deployment during config
 ./cli/deploy.py pipeline PREFIX YOUR_PROJECT_NAME test
 
-# After it is created you will have a chance to deploy right away or do it later using the deploy.py command.
 # Once deployed, test it out with a SHORT 30 to 60 second video:
-cd ../SOME_DIR_WITH_A_SHORT_30_SEC_VIDEO
 aws s3 cp test-video-file.mp4 s3://VIDEO_SOURCE_BUCKET/uploads/
+# Go to Elemental in the AWS console and view Jobs. Once processing is complete go to the S3 console and see that the video artifacts were placed in the output bucket.
 
-# Because the bucket uses OAC for security, you will need a cloudfront distribution
+# Because the output bucket uses OAC for security, you will need a cloudfront distribution
 # A custom domain record in Route 53 is optional, you can just use the CloudFront distribution url for testing
-cd ../YOUR_DEVOPS_SAM_CONFIG_REPO
 ./cli/config.py network PREFIX YOUR_PROJECT_NAME test
 # choose the template-network-route53-cloudfront-s3-apigw.yml template when asked
 # Follow the prompts (You will need the OriginBucketDomainForCloudFront from the storage stack)
@@ -136,17 +119,15 @@ When you are confident with the way the application performs, you can set up a p
 
 ### Deployment Without 63Klabs Atlantis
 
-You will have to have a firm understanding of multi-stack, micro-service architecture as well as permissions and template configuration.
+You will need a firm understanding of multi-stack, micro-service architecture as well as permissions and template configuration.
 
-If this is your first time deploying to AWS, or deployments have been difficult to manage in the past and you are looking into automating some of your tasks, please look at 63Klabs Atlantis. (If you traditionally deploy applications through the Web Console, PLEASE look into Atlantis or at least Infrastructure as Code! I have many, many [tutorials to get you started](https://github.com/63Klabs/atlantis-tutorials) deploying production-ready applications!)
+If this is your first time deploying to AWS, or deployments have been difficult to manage in the past and you are looking into automating some of your tasks, please look at the 63Klabs Atlantis DevOps Platform. (If you traditionally deploy applications through the Web Console, PLEASE look into Atlantis or at least Infrastructure as Code! I have many, many [tutorials to get you started](https://github.com/63Klabs/atlantis-tutorials) deploying production-ready applications!)
 
 If you have a process that works or are using Terraform or other workflow to manage your deployments, then modify the template and function to suit your needs. You can use the template and configurations as guides.
 
 ## Checking Events
 
 Of course, in the end if everything works right, you should soon be able to check the MediaConvert queue and subsequently the Output bucket for your video.
-
-However, the process doesn't complete in a matter of seconds, and if there are issues you will be waiting for a long time.
 
 To find if an S3 event triggered, you have several methods available depending on your setup and monitoring needs:
 
@@ -155,7 +136,7 @@ To find if an S3 event triggered, you have several methods available depending o
 First, verify if you have S3 event notifications configured:
 
 1. Go to the Amazon S3 console
-2. Navigate to your bucket
+2. Navigate to the upload bucket
 3. Click the Properties tab
 4. Look for the Event notifications section
 5. Check if you have any event notification configurations set up
@@ -213,8 +194,8 @@ Remember that S3 supports various event types including object creation. Make su
 
 The application can be configured through parameters in the CloudFormation template:
 
-- VideoOutputBucket: S3 bucket where transcoded videos will be stored
-- VideoOutputPrefix: S3 object prefix (folder path) within the output bucket
+- `VideoOutputBucket`: S3 bucket where transcoded videos will be stored
+- `VideoOutputPrefix`: S3 object prefix (folder path) within the output bucket
 
 The other parameters are standard for Atlantis templates so you can gather more info from the tutorials and documentation.
 
@@ -247,10 +228,14 @@ These outputs expect a 4K video with an aspect of 9:16 uploaded. The script does
 You can specify an output bucket on a per-video basis by using S3 object tags. The Lambda function can be modified to read the `VideoOutputBucket` tag from the uploaded video and use that as the `VideoOutputBucket` for the MediaConvert job.
 
 ```bash
-aws s3 cp large-video-file.mp4 s3://VIDEO_SOURCE_BUCKET/uploads/ --tagging "VideoOutputBucket=bucketname"
+aws s3api put-object \
+  --bucket VIDEO_SOURCE_BUCKET \
+  --key uploads/large-video-file.mp4 \
+  --body ./large-video-file.mp4 \
+  --tagging "VideoOutputBucket=VIDEO_OUTPUT_BUCKET"
 ```
 
-> Note: Before the Lambda function will recognize a `VideoOutputBucket` in a tag, it MUST be passed as a value to the `VideoOutputBucket` parameter when the application is deployed. Also, the _OUTPUT BUCKET_ MUST have the tag key `AllowElementalMediaConvertOutput` with value `true`
+> **Note:** Before the Lambda function will recognize a `VideoOutputBucket` in a tag, it MUST be passed as a value to the `VideoOutputBucket` parameter when the application is deployed. Also, the **OUTPUT BUCKET** MUST have the tag key `AllowElementalMediaConvertOutput` with value `true`
 
 For this to work, when creating the pipeline, do not set the `S3StaticHostBucket` parameter. Instead, set the `VideoOutputBucket` parameter directly in the `application-infrastructure/template-configuration.json` to a comma separated value listing each of the bucket names.
 
